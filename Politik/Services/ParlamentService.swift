@@ -323,7 +323,7 @@ struct PersonOccupationDTO: Decodable, Sendable {
 enum ODataDateParser {
     static func parse(_ dateString: String?) -> Date? {
         guard let dateString = dateString,
-              let range = dateString.range(of: #"\d+"#, options: .regularExpression) else {
+              let range = dateString.range(of: #"-?\d+"#, options: .regularExpression) else {
             return nil
         }
         let milliseconds = String(dateString[range])

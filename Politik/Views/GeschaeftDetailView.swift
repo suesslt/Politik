@@ -53,6 +53,9 @@ struct GeschaeftDetailView: View {
         .navigationDestination(for: Abstimmung.self) { abstimmung in
             AbstimmungDetailView(abstimmung: abstimmung)
         }
+        .navigationDestination(for: Parlamentarier.self) { parlamentarier in
+            ParlamentarierDetailView(parlamentarier: parlamentarier)
+        }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
@@ -198,9 +201,6 @@ struct GeschaeftDetailView: View {
             }
         } header: {
             Label("Details", systemImage: "info.circle")
-        }
-        .navigationDestination(for: Parlamentarier.self) { parlamentarier in
-            ParlamentarierDetailView(parlamentarier: parlamentarier)
         }
     }
 

@@ -14,6 +14,8 @@ struct ExportContainer: Codable {
     var stimmabgaben: [ExportStimmabgabe]
     var personInterests: [ExportPersonInterest]
     var personOccupations: [ExportPersonOccupation]
+    // Added in v2 – optional for backward compatibility with v1 exports
+    var propositions: [ExportProposition]?
 }
 
 // MARK: - Export DTOs
@@ -109,6 +111,7 @@ struct ExportWortmeldung: Codable {
     let type: Int
     let startTime: Date?
     let endTime: Date?
+    let isPropositionExtracted: Bool?  // optional for backward compat
     // Relationships as IDs
     let geschaeftID: Int?
     let parlamentarierPersonNumber: Int?
@@ -158,6 +161,19 @@ struct ExportPersonOccupation: Codable {
     let parlamentarierPersonNumber: Int?
 }
 
+struct ExportProposition: Codable {
+    let id: String  // UUID as string
+    let keyMessage: String
+    let subject: String
+    let dateOfProposition: Date?
+    let source: String
+    let geschaeft: String
+    let createdAt: Date
+    // Relationships as IDs
+    let parlamentarierPersonNumber: Int?
+    let wortmeldungID: String?
+}
+
 // MARK: - Export/Import Service
 
 @MainActor @Observable
@@ -186,6 +202,7 @@ final class DataExportImportService {
         let stimmabgaben = try modelContext.fetch(FetchDescriptor<Stimmabgabe>())
         let personInterests = try modelContext.fetch(FetchDescriptor<PersonInterest>())
         let personOccupations = try modelContext.fetch(FetchDescriptor<PersonOccupation>())
+        let propositions = try modelContext.fetch(FetchDescriptor<Proposition>())
 
         let container = ExportContainer(
             exportDate: Date(),
@@ -281,6 +298,7 @@ final class DataExportImportService {
                     type: w.type,
                     startTime: w.startTime,
                     endTime: w.endTime,
+                    isPropositionExtracted: w.isPropositionExtracted,
                     geschaeftID: w.geschaeft?.id,
                     parlamentarierPersonNumber: w.parlamentarier?.personNumber
                 )
@@ -328,6 +346,19 @@ final class DataExportImportService {
                     jobTitle: po.jobTitle,
                     parlamentarierPersonNumber: po.parlamentarier?.personNumber
                 )
+            },
+            propositions: propositions.map { p in
+                ExportProposition(
+                    id: p.id.uuidString,
+                    keyMessage: p.keyMessage,
+                    subject: p.subject,
+                    dateOfProposition: p.dateOfProposition,
+                    source: p.source,
+                    geschaeft: p.geschaeft,
+                    createdAt: p.createdAt,
+                    parlamentarierPersonNumber: p.parlamentarier?.personNumber,
+                    wortmeldungID: p.wortmeldung?.id
+                )
             }
         )
 
@@ -340,7 +371,8 @@ final class DataExportImportService {
         \(sessions.count) Sessionen, \(geschaefte.count) Geschäfte, \
         \(parlamentarierList.count) Parlamentarier, \(wortmeldungen.count) Wortmeldungen, \
         \(abstimmungen.count) Abstimmungen, \(stimmabgaben.count) Stimmabgaben, \
-        \(personInterests.count) Interessen, \(personOccupations.count) Berufe
+        \(personInterests.count) Interessen, \(personOccupations.count) Berufe, \
+        \(propositions.count) Propositionen
         """
         phase = .completed(message: "Export abgeschlossen: \(counts)")
         return data
@@ -363,6 +395,7 @@ final class DataExportImportService {
 
         // Step 1: Delete all existing data
         phase = .importing(step: "Bestehende Daten löschen…")
+        try modelContext.delete(model: Proposition.self)
         try modelContext.delete(model: Stimmabgabe.self)
         try modelContext.delete(model: PersonInterest.self)
         try modelContext.delete(model: PersonOccupation.self)
@@ -476,6 +509,7 @@ final class DataExportImportService {
 
         // Step 5: Import Wortmeldungen (→ Geschaeft, Parlamentarier)
         phase = .importing(step: "Wortmeldungen importieren (\(container.wortmeldungen.count))…")
+        var wortmeldungLookup: [String: Wortmeldung] = [:]
         for (index, dto) in container.wortmeldungen.enumerated() {
             let wortmeldung = Wortmeldung(
                 id: dto.id,
@@ -493,7 +527,9 @@ final class DataExportImportService {
                 geschaeft: dto.geschaeftID.flatMap { geschaeftLookup[$0] },
                 parlamentarier: dto.parlamentarierPersonNumber.flatMap { parlamentarierLookup[$0] }
             )
+            wortmeldung.isPropositionExtracted = dto.isPropositionExtracted ?? false
             modelContext.insert(wortmeldung)
+            wortmeldungLookup[dto.id] = wortmeldung
             if index % 500 == 0 { try modelContext.save() }
         }
         try modelContext.save()
@@ -565,11 +601,37 @@ final class DataExportImportService {
         }
         try modelContext.save()
 
+        // Step 10: Import Propositions (→ Parlamentarier, Wortmeldung)
+        let exportedPropositions = container.propositions ?? []
+        if !exportedPropositions.isEmpty {
+            phase = .importing(step: "Propositionen importieren (\(exportedPropositions.count))…")
+            for (index, dto) in exportedPropositions.enumerated() {
+                let proposition = Proposition(
+                    keyMessage: dto.keyMessage,
+                    subject: dto.subject,
+                    dateOfProposition: dto.dateOfProposition,
+                    source: dto.source,
+                    geschaeft: dto.geschaeft,
+                    parlamentarier: dto.parlamentarierPersonNumber.flatMap { parlamentarierLookup[$0] },
+                    wortmeldung: dto.wortmeldungID.flatMap { wortmeldungLookup[$0] }
+                )
+                // Restore original UUID if possible
+                if let uuid = UUID(uuidString: dto.id) {
+                    proposition.id = uuid
+                }
+                modelContext.insert(proposition)
+                if index % 500 == 0 { try modelContext.save() }
+            }
+            try modelContext.save()
+        }
+
+        let propCount = exportedPropositions.count
         let counts = """
         \(container.sessions.count) Sessionen, \(container.geschaefte.count) Geschäfte, \
         \(container.parlamentarier.count) Parlamentarier, \(container.wortmeldungen.count) Wortmeldungen, \
         \(container.abstimmungen.count) Abstimmungen, \(container.stimmabgaben.count) Stimmabgaben, \
-        \(container.personInterests.count) Interessen, \(container.personOccupations.count) Berufe
+        \(container.personInterests.count) Interessen, \(container.personOccupations.count) Berufe, \
+        \(propCount) Propositionen
         """
         phase = .completed(message: "Import abgeschlossen: \(counts)")
     }

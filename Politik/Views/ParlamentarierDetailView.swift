@@ -12,6 +12,17 @@ struct ParlamentarierDetailView: View {
     @State private var extractionTask: Task<Void, Never>?
     @State private var errorMessage: String?
 
+    // Section expand/collapse state
+    @State private var expandPerson = true
+    @State private var expandAnalyse = true
+    @State private var expandDetails = false
+    @State private var expandBerufe = false
+    @State private var expandInteressen = false
+    @State private var expandStimmverhalten = false
+    @State private var expandGeschaefte = false
+    @State private var expandKernaussagen = true
+    @State private var expandWortmeldungen = false
+
     private let service = ParlamentService()
 
     private var dateFormatter: DateFormatter {
@@ -107,15 +118,22 @@ struct ParlamentarierDetailView: View {
     // MARK: - KI-Analyse
 
     private var analyseSection: some View {
-        AnalysisResultSection(
-            linksRechts: parlamentarier.linksRechts,
-            konservativLiberal: parlamentarier.konservativLiberal,
-            liberaleWirtschaft: parlamentarier.liberaleWirtschaft,
-            innovativerStandort: parlamentarier.innovativerStandort,
-            unabhaengigeStromversorgung: parlamentarier.unabhaengigeStromversorgung,
-            staerkeResilienz: parlamentarier.staerkeResilienz,
-            schlankerStaat: parlamentarier.schlankerStaat
-        )
+        Section {
+            DisclosureGroup(isExpanded: $expandAnalyse) {
+                AnalysisBarView(label: "Links / Rechts", value: parlamentarier.linksRechts,
+                               leftLabel: "Links", rightLabel: "Rechts")
+                AnalysisBarView(label: "Konservativ / Liberal", value: parlamentarier.konservativLiberal,
+                               leftLabel: "Konservativ", rightLabel: "Liberal")
+                AnalysisFactorView(label: "Liberale Wirtschaft", value: parlamentarier.liberaleWirtschaft)
+                AnalysisFactorView(label: "Innovativer Standort", value: parlamentarier.innovativerStandort)
+                AnalysisFactorView(label: "Unabh. Stromversorgung", value: parlamentarier.unabhaengigeStromversorgung)
+                AnalysisFactorView(label: "Stärke / Resilienz", value: parlamentarier.staerkeResilienz)
+                AnalysisFactorView(label: "Schlanker Staat", value: parlamentarier.schlankerStaat)
+            } label: {
+                Label("KI-Analyse", systemImage: "brain")
+                    .font(.subheadline.bold())
+            }
+        }
     }
 
     private func analyzeParlamentarier() async {
@@ -164,54 +182,57 @@ struct ParlamentarierDetailView: View {
 
     private var propositionenSection: some View {
         Section {
-            if parlamentarier.propositions.isEmpty {
-                Text("Keine Kernaussagen extrahiert")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            } else {
-                let grouped = Dictionary(grouping: parlamentarier.propositions) { $0.subject }
-                let sortedSubjects = grouped.keys.sorted()
+            DisclosureGroup(isExpanded: $expandKernaussagen) {
+                if parlamentarier.propositions.isEmpty {
+                    Text("Keine Kernaussagen extrahiert")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                } else {
+                    let grouped = Dictionary(grouping: parlamentarier.propositions) { $0.subject }
+                    let sortedSubjects = grouped.keys.sorted()
 
-                ForEach(sortedSubjects, id: \.self) { subject in
-                    let propositions = grouped[subject]!.sorted { $0.createdAt > $1.createdAt }
-                    DisclosureGroup {
-                        ForEach(propositions) { proposition in
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(proposition.keyMessage)
-                                    .font(.subheadline)
-                                HStack(spacing: 6) {
-                                    if !proposition.geschaeft.isEmpty {
-                                        Text(proposition.geschaeft)
-                                            .font(.caption2)
-                                            .foregroundStyle(.secondary)
-                                            .lineLimit(1)
-                                    }
-                                    if let date = proposition.dateOfProposition {
-                                        Text(dateFormatter.string(from: date))
-                                            .font(.caption2)
-                                            .foregroundStyle(.tertiary)
+                    ForEach(sortedSubjects, id: \.self) { subject in
+                        let propositions = grouped[subject]!.sorted { $0.createdAt > $1.createdAt }
+                        DisclosureGroup {
+                            ForEach(propositions) { proposition in
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(proposition.keyMessage)
+                                        .font(.subheadline)
+                                    HStack(spacing: 6) {
+                                        if !proposition.geschaeft.isEmpty {
+                                            Text(proposition.geschaeft)
+                                                .font(.caption2)
+                                                .foregroundStyle(.secondary)
+                                                .lineLimit(1)
+                                        }
+                                        if let date = proposition.dateOfProposition {
+                                            Text(dateFormatter.string(from: date))
+                                                .font(.caption2)
+                                                .foregroundStyle(.tertiary)
+                                        }
                                     }
                                 }
-                            }
-                            .padding(.vertical, 2)
-                        }
-                    } label: {
-                        HStack {
-                            Text(subject)
-                                .font(.subheadline.bold())
-                            Spacer()
-                            Text("\(propositions.count)")
-                                .font(.caption.monospacedDigit())
-                                .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
-                                .background(.secondary.opacity(0.1))
-                                .clipShape(Capsule())
+                            }
+                        } label: {
+                            HStack {
+                                Text(subject)
+                                    .font(.subheadline.bold())
+                                Spacer()
+                                Text("\(propositions.count)")
+                                    .font(.caption.monospacedDigit())
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(.secondary.opacity(0.1))
+                                    .clipShape(Capsule())
+                            }
                         }
                     }
                 }
+            } label: {
+                Label("Kernaussagen (\(parlamentarier.propositions.count))", systemImage: "text.quote")
+                    .font(.subheadline.bold())
             }
-        } header: {
-            Label("Kernaussagen (\(parlamentarier.propositions.count))", systemImage: "text.quote")
         }
     }
 
@@ -219,54 +240,57 @@ struct ParlamentarierDetailView: View {
 
     private var personalSection: some View {
         Section {
-            DetailRow(label: "Name", value: parlamentarier.fullName)
-            if let party = parlamentarier.partyAbbreviation {
-                DetailRow(label: "Partei", value: parlamentarier.partyName ?? party)
-            }
-            if let group = parlamentarier.parlGroupAbbreviation {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Fraktion")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Text(parlamentarier.parlGroupName ?? group)
-                            .font(.subheadline)
+            DisclosureGroup(isExpanded: $expandPerson) {
+                DetailRow(label: "Name", value: parlamentarier.fullName)
+                if let party = parlamentarier.partyAbbreviation {
+                    DetailRow(label: "Partei", value: parlamentarier.partyName ?? party)
+                }
+                if let group = parlamentarier.parlGroupAbbreviation {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Fraktion")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text(parlamentarier.parlGroupName ?? group)
+                                .font(.subheadline)
+                        }
+                        Spacer()
+                        Text(group)
+                            .font(.caption.bold())
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(parlGroupColor(group).opacity(0.15))
+                            .foregroundStyle(parlGroupColor(group))
+                            .clipShape(Capsule())
                     }
+                }
+                if let canton = parlamentarier.cantonAbbreviation {
+                    DetailRow(label: "Kanton", value: parlamentarier.cantonName ?? canton)
+                }
+                if let council = parlamentarier.councilName {
+                    DetailRow(label: "Rat", value: council)
+                }
+                HStack {
+                    Text("Status")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     Spacer()
-                    Text(group)
-                        .font(.caption.bold())
+                    Text(parlamentarier.isActive ? "Aktiv" : "Inaktiv")
+                        .font(.caption)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(parlGroupColor(group).opacity(0.15))
-                        .foregroundStyle(parlGroupColor(group))
+                        .background(parlamentarier.isActive ? Color.green.opacity(0.1) : Color.gray.opacity(0.1))
+                        .foregroundStyle(parlamentarier.isActive ? .green : .gray)
                         .clipShape(Capsule())
                 }
-            }
-            if let canton = parlamentarier.cantonAbbreviation {
-                DetailRow(label: "Kanton", value: parlamentarier.cantonName ?? canton)
-            }
-            if let council = parlamentarier.councilName {
-                DetailRow(label: "Rat", value: council)
-            }
-            HStack {
-                Text("Status")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text(parlamentarier.isActive ? "Aktiv" : "Inaktiv")
-                    .font(.caption)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(parlamentarier.isActive ? Color.green.opacity(0.1) : Color.gray.opacity(0.1))
-                    .foregroundStyle(parlamentarier.isActive ? .green : .gray)
-                    .clipShape(Capsule())
-            }
-        } header: {
-            HStack {
-                Label("Person", systemImage: "person")
-                if isLoadingDetail {
-                    ProgressView()
-                        .controlSize(.small)
+            } label: {
+                HStack {
+                    Label("Person", systemImage: "person")
+                        .font(.subheadline.bold())
+                    if isLoadingDetail {
+                        ProgressView()
+                            .controlSize(.small)
+                    }
                 }
             }
         }
@@ -276,36 +300,39 @@ struct ParlamentarierDetailView: View {
 
     private var enrichedSection: some View {
         Section {
-            if let dob = parlamentarier.dateOfBirth {
-                DetailRow(label: "Geburtsdatum", value: dateFormatter.string(from: dob))
+            DisclosureGroup(isExpanded: $expandDetails) {
+                if let dob = parlamentarier.dateOfBirth {
+                    DetailRow(label: "Geburtsdatum", value: dateFormatter.string(from: dob))
+                }
+                if let city = parlamentarier.birthPlaceCity {
+                    let place = [city, parlamentarier.birthPlaceCanton].compactMap { $0 }.joined(separator: ", ")
+                    DetailRow(label: "Geburtsort", value: place)
+                }
+                if let status = parlamentarier.maritalStatusText {
+                    DetailRow(label: "Zivilstand", value: status)
+                }
+                if let children = parlamentarier.numberOfChildren, children > 0 {
+                    DetailRow(label: "Kinder", value: "\(children)")
+                }
+                if let citizenship = parlamentarier.citizenship {
+                    DetailRow(label: "Bürgerort", value: citizenship)
+                }
+                if let nationality = parlamentarier.nationality {
+                    DetailRow(label: "Nationalität", value: nationality)
+                }
+                if let election = parlamentarier.dateElection {
+                    DetailRow(label: "Gewählt am", value: dateFormatter.string(from: election))
+                }
+                if let joining = parlamentarier.dateJoining {
+                    DetailRow(label: "Beitritt", value: dateFormatter.string(from: joining))
+                }
+                if let military = parlamentarier.militaryRankText, !military.isEmpty {
+                    DetailRow(label: "Militärischer Rang", value: military)
+                }
+            } label: {
+                Label("Details", systemImage: "info.circle")
+                    .font(.subheadline.bold())
             }
-            if let city = parlamentarier.birthPlaceCity {
-                let place = [city, parlamentarier.birthPlaceCanton].compactMap { $0 }.joined(separator: ", ")
-                DetailRow(label: "Geburtsort", value: place)
-            }
-            if let status = parlamentarier.maritalStatusText {
-                DetailRow(label: "Zivilstand", value: status)
-            }
-            if let children = parlamentarier.numberOfChildren, children > 0 {
-                DetailRow(label: "Kinder", value: "\(children)")
-            }
-            if let citizenship = parlamentarier.citizenship {
-                DetailRow(label: "Bürgerort", value: citizenship)
-            }
-            if let nationality = parlamentarier.nationality {
-                DetailRow(label: "Nationalität", value: nationality)
-            }
-            if let election = parlamentarier.dateElection {
-                DetailRow(label: "Gewählt am", value: dateFormatter.string(from: election))
-            }
-            if let joining = parlamentarier.dateJoining {
-                DetailRow(label: "Beitritt", value: dateFormatter.string(from: joining))
-            }
-            if let military = parlamentarier.militaryRankText, !military.isEmpty {
-                DetailRow(label: "Militärischer Rang", value: military)
-            }
-        } header: {
-            Label("Details", systemImage: "info.circle")
         }
     }
 
@@ -313,24 +340,27 @@ struct ParlamentarierDetailView: View {
 
     private var occupationsSection: some View {
         Section {
-            ForEach(parlamentarier.occupations, id: \.occupationName) { occ in
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(occ.occupationName)
-                        .font(.subheadline)
-                    if let employer = occ.employer, !employer.isEmpty {
-                        Text(employer)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    if let title = occ.jobTitle, !title.isEmpty {
-                        Text(title)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+            DisclosureGroup(isExpanded: $expandBerufe) {
+                ForEach(parlamentarier.occupations, id: \.occupationName) { occ in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(occ.occupationName)
+                            .font(.subheadline)
+                        if let employer = occ.employer, !employer.isEmpty {
+                            Text(employer)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        if let title = occ.jobTitle, !title.isEmpty {
+                            Text(title)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
+            } label: {
+                Label("Beruf (\(parlamentarier.occupations.count))", systemImage: "briefcase")
+                    .font(.subheadline.bold())
             }
-        } header: {
-            Label("Beruf (\(parlamentarier.occupations.count))", systemImage: "briefcase")
         }
     }
 
@@ -338,38 +368,41 @@ struct ParlamentarierDetailView: View {
 
     private var interestsSection: some View {
         Section {
-            ForEach(parlamentarier.interests, id: \.interestName) { interest in
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(interest.interestName)
-                        .font(.subheadline)
-                    HStack(spacing: 6) {
-                        if let type = interest.interestTypeText {
-                            Text(type)
-                                .font(.caption2)
-                                .padding(.horizontal, 5)
-                                .padding(.vertical, 2)
-                                .background(.secondary.opacity(0.1))
-                                .clipShape(Capsule())
-                        }
-                        if let function = interest.functionInAgencyText {
-                            Text(function)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-                        if interest.paid == true {
-                            Text("Bezahlt")
-                                .font(.caption2)
-                                .padding(.horizontal, 5)
-                                .padding(.vertical, 2)
-                                .background(.orange.opacity(0.1))
-                                .foregroundStyle(.orange)
-                                .clipShape(Capsule())
+            DisclosureGroup(isExpanded: $expandInteressen) {
+                ForEach(parlamentarier.interests, id: \.interestName) { interest in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(interest.interestName)
+                            .font(.subheadline)
+                        HStack(spacing: 6) {
+                            if let type = interest.interestTypeText {
+                                Text(type)
+                                    .font(.caption2)
+                                    .padding(.horizontal, 5)
+                                    .padding(.vertical, 2)
+                                    .background(.secondary.opacity(0.1))
+                                    .clipShape(Capsule())
+                            }
+                            if let function = interest.functionInAgencyText {
+                                Text(function)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                            if interest.paid == true {
+                                Text("Bezahlt")
+                                    .font(.caption2)
+                                    .padding(.horizontal, 5)
+                                    .padding(.vertical, 2)
+                                    .background(.orange.opacity(0.1))
+                                    .foregroundStyle(.orange)
+                                    .clipShape(Capsule())
+                            }
                         }
                     }
                 }
+            } label: {
+                Label("Interessenbindungen (\(parlamentarier.interests.count))", systemImage: "link")
+                    .font(.subheadline.bold())
             }
-        } header: {
-            Label("Interessenbindungen (\(parlamentarier.interests.count))", systemImage: "link")
         }
     }
 
@@ -377,49 +410,52 @@ struct ParlamentarierDetailView: View {
 
     private var votingRecordSection: some View {
         Section {
-            let stimmabgaben = parlamentarier.stimmabgaben
-            if stimmabgaben.isEmpty {
-                Text("Keine Abstimmungen geladen")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            } else {
-                let jaCount = stimmabgaben.filter { $0.decision == 1 }.count
-                let neinCount = stimmabgaben.filter { $0.decision == 2 }.count
-                let enthCount = stimmabgaben.filter { $0.decision == 3 }.count
+            DisclosureGroup(isExpanded: $expandStimmverhalten) {
+                let stimmabgaben = parlamentarier.stimmabgaben
+                if stimmabgaben.isEmpty {
+                    Text("Keine Abstimmungen geladen")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                } else {
+                    let jaCount = stimmabgaben.filter { $0.decision == 1 }.count
+                    let neinCount = stimmabgaben.filter { $0.decision == 2 }.count
+                    let enthCount = stimmabgaben.filter { $0.decision == 3 }.count
 
-                HStack(spacing: 16) {
-                    VoteBadge(label: "Ja", value: jaCount, color: .green)
-                    VoteBadge(label: "Nein", value: neinCount, color: .red)
-                    VoteBadge(label: "Enth.", value: enthCount, color: .orange)
-                }
-                .padding(.vertical, 4)
+                    HStack(spacing: 16) {
+                        VoteBadge(label: "Ja", value: jaCount, color: .green)
+                        VoteBadge(label: "Nein", value: neinCount, color: .red)
+                        VoteBadge(label: "Enth.", value: enthCount, color: .orange)
+                    }
+                    .padding(.vertical, 4)
 
-                let sorted = stimmabgaben
-                    .sorted { ($0.abstimmung?.voteEnd ?? .distantPast) > ($1.abstimmung?.voteEnd ?? .distantPast) }
+                    let sorted = stimmabgaben
+                        .sorted { ($0.abstimmung?.voteEnd ?? .distantPast) > ($1.abstimmung?.voteEnd ?? .distantPast) }
 
-                ForEach(sorted.prefix(20)) { stimmabgabe in
-                    if let abstimmung = stimmabgabe.abstimmung {
-                        NavigationLink(value: abstimmung) {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(abstimmung.businessShortNumber ?? "")
-                                        .font(.caption.monospaced())
-                                        .foregroundStyle(.secondary)
-                                    Text(abstimmung.subject ?? "Abstimmung")
-                                        .font(.subheadline)
-                                        .lineLimit(1)
+                    ForEach(sorted.prefix(20)) { stimmabgabe in
+                        if let abstimmung = stimmabgabe.abstimmung {
+                            NavigationLink(value: abstimmung) {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(abstimmung.businessShortNumber ?? "")
+                                            .font(.caption.monospaced())
+                                            .foregroundStyle(.secondary)
+                                        Text(abstimmung.geschaeft?.title ?? abstimmung.billTitle ?? abstimmung.subject ?? "Abstimmung")
+                                            .font(.subheadline)
+                                            .lineLimit(2)
+                                    }
+                                    Spacer()
+                                    Text(stimmabgabe.decisionDisplayText)
+                                        .font(.caption.bold())
+                                        .foregroundStyle(stimmabgabe.decisionColor)
                                 }
-                                Spacer()
-                                Text(stimmabgabe.decisionDisplayText)
-                                    .font(.caption.bold())
-                                    .foregroundStyle(stimmabgabe.decisionColor)
                             }
                         }
                     }
                 }
+            } label: {
+                Label("Stimmverhalten (\(parlamentarier.stimmabgaben.count))", systemImage: "checkmark.circle")
+                    .font(.subheadline.bold())
             }
-        } header: {
-            Label("Stimmverhalten (\(parlamentarier.stimmabgaben.count))", systemImage: "checkmark.circle")
         }
     }
 
@@ -427,35 +463,38 @@ struct ParlamentarierDetailView: View {
 
     private var geschaefteSection: some View {
         Section {
-            if parlamentarier.geschaefte.isEmpty {
-                Text("Keine Geschäfte als Urheber/-in")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            } else {
-                ForEach(parlamentarier.geschaefte.sorted(by: { $0.businessShortNumber > $1.businessShortNumber })) { geschaeft in
-                    NavigationLink(value: geschaeft) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            HStack {
-                                Text(geschaeft.businessShortNumber)
-                                    .font(.caption.monospaced())
-                                    .foregroundStyle(.secondary)
-                                Text(geschaeft.businessTypeAbbreviation)
-                                    .font(.caption2)
-                                    .padding(.horizontal, 5)
-                                    .padding(.vertical, 2)
-                                    .background(.blue.opacity(0.1))
-                                    .foregroundStyle(.blue)
-                                    .clipShape(Capsule())
+            DisclosureGroup(isExpanded: $expandGeschaefte) {
+                if parlamentarier.geschaefte.isEmpty {
+                    Text("Keine Geschäfte als Urheber/-in")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(parlamentarier.geschaefte.sorted(by: { $0.businessShortNumber > $1.businessShortNumber })) { geschaeft in
+                        NavigationLink(value: geschaeft) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack {
+                                    Text(geschaeft.businessShortNumber)
+                                        .font(.caption.monospaced())
+                                        .foregroundStyle(.secondary)
+                                    Text(geschaeft.businessTypeAbbreviation)
+                                        .font(.caption2)
+                                        .padding(.horizontal, 5)
+                                        .padding(.vertical, 2)
+                                        .background(.blue.opacity(0.1))
+                                        .foregroundStyle(.blue)
+                                        .clipShape(Capsule())
+                                }
+                                Text(geschaeft.title)
+                                    .font(.subheadline)
+                                    .lineLimit(2)
                             }
-                            Text(geschaeft.title)
-                                .font(.subheadline)
-                                .lineLimit(2)
                         }
                     }
                 }
+            } label: {
+                Label("Geschäfte als Urheber/-in (\(parlamentarier.geschaefte.count))", systemImage: "doc.text")
+                    .font(.subheadline.bold())
             }
-        } header: {
-            Label("Geschäfte als Urheber/-in (\(parlamentarier.geschaefte.count))", systemImage: "doc.text")
         }
     }
 
@@ -463,36 +502,39 @@ struct ParlamentarierDetailView: View {
 
     private var wortmeldungenSection: some View {
         Section {
-            let redenOnly = parlamentarier.wortmeldungen
-                .filter { $0.isRede }
-                .sorted { $0.sortOrder < $1.sortOrder }
-            if redenOnly.isEmpty {
-                Text("Keine Wortmeldungen geladen")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            } else {
-                ForEach(redenOnly.prefix(20)) { wortmeldung in
-                    VStack(alignment: .leading, spacing: 4) {
-                        if let geschaeft = wortmeldung.geschaeft {
-                            Text(geschaeft.businessShortNumber)
-                                .font(.caption.monospaced())
-                                .foregroundStyle(.secondary)
+            DisclosureGroup(isExpanded: $expandWortmeldungen) {
+                let redenOnly = parlamentarier.wortmeldungen
+                    .filter { $0.isRede }
+                    .sorted { $0.sortOrder < $1.sortOrder }
+                if redenOnly.isEmpty {
+                    Text("Keine Wortmeldungen geladen")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(redenOnly.prefix(20)) { wortmeldung in
+                        VStack(alignment: .leading, spacing: 4) {
+                            if let geschaeft = wortmeldung.geschaeft {
+                                Text(geschaeft.businessShortNumber)
+                                    .font(.caption.monospaced())
+                                    .foregroundStyle(.secondary)
+                            }
+                            Text(wortmeldung.plainText)
+                                .font(.caption)
+                                .lineLimit(3)
+                            if let date = wortmeldung.meetingDate {
+                                Text(formatDate(date))
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
+                            }
                         }
-                        Text(wortmeldung.plainText)
-                            .font(.caption)
-                            .lineLimit(3)
-                        if let date = wortmeldung.meetingDate {
-                            Text(formatDate(date))
-                                .font(.caption2)
-                                .foregroundStyle(.tertiary)
-                        }
+                        .padding(.vertical, 2)
                     }
-                    .padding(.vertical, 2)
                 }
+            } label: {
+                let count = parlamentarier.wortmeldungen.filter(\.isRede).count
+                Label("Wortmeldungen (\(count))", systemImage: "text.quote")
+                    .font(.subheadline.bold())
             }
-        } header: {
-            let count = parlamentarier.wortmeldungen.filter(\.isRede).count
-            Label("Wortmeldungen (\(count))", systemImage: "text.quote")
         }
     }
 

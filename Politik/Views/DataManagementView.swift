@@ -28,12 +28,18 @@ struct DataManagementView: View {
     @Query private var stimmabgaben: [Stimmabgabe]
     @Query private var personInterests: [PersonInterest]
     @Query private var personOccupations: [PersonOccupation]
+    @Query private var propositions: [Proposition]
+
+    // Date fix
+    @State private var isResettingDates = false
+    @State private var dateResetMessage: String?
 
     var body: some View {
         NavigationStack {
             List {
                 apiKeySection
                 currentDataSection
+                maintenanceSection
                 exportSection
                 importSection
                 statusSection
@@ -75,6 +81,7 @@ struct DataManagementView: View {
                     • \(preview.stimmabgaben.count) Stimmabgaben
                     • \(preview.personInterests.count) Interessen
                     • \(preview.personOccupations.count) Berufe
+                    • \((preview.propositions ?? []).count) Propositionen
                     """)
                 }
             }
@@ -126,9 +133,47 @@ struct DataManagementView: View {
             LabeledContent("Stimmabgaben", value: "\(stimmabgaben.count)")
             LabeledContent("Interessen", value: "\(personInterests.count)")
             LabeledContent("Berufe", value: "\(personOccupations.count)")
+            LabeledContent("Propositionen", value: "\(propositions.count)")
         } header: {
             Label("Aktuelle Daten", systemImage: "cylinder.split.1x2")
         }
+    }
+
+    // MARK: - Maintenance
+
+    private var maintenanceSection: some View {
+        Section {
+            Button {
+                resetDetailFlags()
+            } label: {
+                Label("Geburtsdaten neu laden", systemImage: "arrow.clockwise")
+            }
+            .disabled(isResettingDates)
+
+            if let message = dateResetMessage {
+                Label(message, systemImage: "checkmark.circle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.green)
+            }
+        } header: {
+            Label("Wartung", systemImage: "wrench.and.screwdriver")
+        } footer: {
+            Text("Setzt das Detail-Flag aller Parlamentarier zurück, damit beim nächsten Öffnen die Daten (inkl. Geburtsdatum) neu vom Server geladen werden.")
+        }
+    }
+
+    private func resetDetailFlags() {
+        isResettingDates = true
+        var count = 0
+        for p in parlamentarier {
+            if p.isDetailLoaded {
+                p.isDetailLoaded = false
+                count += 1
+            }
+        }
+        try? modelContext.save()
+        dateResetMessage = "\(count) Parlamentarier zurückgesetzt"
+        isResettingDates = false
     }
 
     // MARK: - Export
