@@ -45,6 +45,10 @@ struct PolitikApp: App {
                     .tabItem {
                         Label("Parlamentarier", systemImage: "person.3")
                     }
+                WortmeldungListView()
+                    .tabItem {
+                        Label("Wortmeldungen", systemImage: "text.quote")
+                    }
                 DataManagementView()
                     .tabItem {
                         Label("Daten", systemImage: "externaldrive")
