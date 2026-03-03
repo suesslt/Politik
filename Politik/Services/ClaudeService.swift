@@ -242,6 +242,41 @@ final class ClaudeService {
         phase = .completed(successCount: successCount, errorCount: errorCount)
     }
 
+    // MARK: - Public: Extract Propositions from a single Wortmeldung
+
+    func extractPropositionsFromWortmeldung(
+        wortmeldung: Wortmeldung,
+        modelContext: ModelContext
+    ) async throws {
+        guard !wortmeldung.plainText.isEmpty else { return }
+
+        phase = .analyzing(current: 1, total: 1, title: wortmeldung.geschaeft?.businessShortNumber ?? "")
+
+        let apiKey = try getApiKey()
+        let prompt = buildPropositionPrompt(wortmeldung)
+        let propositionDTOs = try await callClaudeForPropositions(prompt: prompt, apiKey: apiKey)
+
+        let propositionDate = parseMeetingDate(wortmeldung.meetingDate)
+        let geschaeftNr = wortmeldung.geschaeft?.businessShortNumber ?? ""
+
+        for dto in propositionDTOs {
+            let proposition = Proposition(
+                keyMessage: dto.kernaussage,
+                subject: dto.subjekt,
+                dateOfProposition: propositionDate,
+                source: wortmeldung.speakerFullName,
+                geschaeft: wortmeldung.geschaeft?.title ?? geschaeftNr,
+                parlamentarier: wortmeldung.parlamentarier,
+                wortmeldung: wortmeldung
+            )
+            modelContext.insert(proposition)
+        }
+
+        wortmeldung.isPropositionExtracted = true
+        try modelContext.save()
+        phase = .completed(successCount: 1, errorCount: 0)
+    }
+
     func reset() {
         phase = .idle
     }

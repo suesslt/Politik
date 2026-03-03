@@ -2,7 +2,12 @@ import SwiftUI
 import SwiftData
 
 struct WortmeldungDetailView: View {
+    @Environment(\.modelContext) private var modelContext
     let wortmeldung: Wortmeldung
+
+    @State private var claudeService = ClaudeService()
+    @State private var isExtracting = false
+    @State private var errorMessage: String?
 
     private var dateFormatter: DateFormatter {
         let formatter = DateFormatter()
@@ -15,9 +20,7 @@ struct WortmeldungDetailView: View {
         List {
             headerSection
             textSection
-            if !wortmeldung.propositions.isEmpty {
-                propositionsSection
-            }
+            propositionsSection
         }
         .listStyle(.insetGrouped)
         .navigationTitle("Wortmeldung")
@@ -28,6 +31,42 @@ struct WortmeldungDetailView: View {
         .navigationDestination(for: Parlamentarier.self) { parlamentarier in
             ParlamentarierDetailView(parlamentarier: parlamentarier)
         }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                if isExtracting {
+                    ProgressView()
+                        .controlSize(.small)
+                } else {
+                    Button {
+                        Task { await extractPropositions() }
+                    } label: {
+                        Label("Kernaussagen extrahieren", systemImage: "lightbulb")
+                    }
+                    .disabled(wortmeldung.plainText.isEmpty)
+                }
+            }
+        }
+        .alert("Fehler", isPresented: .constant(errorMessage != nil)) {
+            Button("OK") { errorMessage = nil }
+        } message: {
+            Text(errorMessage ?? "")
+        }
+    }
+
+    // MARK: - Extraction
+
+    private func extractPropositions() async {
+        isExtracting = true
+        claudeService.reset()
+        do {
+            try await claudeService.extractPropositionsFromWortmeldung(
+                wortmeldung: wortmeldung,
+                modelContext: modelContext
+            )
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isExtracting = false
     }
 
     // MARK: - Header
@@ -142,30 +181,36 @@ struct WortmeldungDetailView: View {
 
     private var propositionsSection: some View {
         Section {
-            let sorted = wortmeldung.propositions.sorted { $0.createdAt < $1.createdAt }
-            ForEach(sorted) { proposition in
-                VStack(alignment: .leading, spacing: 6) {
-                    // Subject badge
-                    Text(proposition.subject)
-                        .font(.caption.bold())
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(.teal.opacity(0.12))
-                        .foregroundStyle(.teal)
-                        .clipShape(Capsule())
+            if wortmeldung.propositions.isEmpty {
+                Text("Keine Kernaussagen extrahiert")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else {
+                let sorted = wortmeldung.propositions.sorted { $0.createdAt < $1.createdAt }
+                ForEach(sorted) { proposition in
+                    VStack(alignment: .leading, spacing: 6) {
+                        // Subject badge
+                        Text(proposition.subject)
+                            .font(.caption.bold())
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(.teal.opacity(0.12))
+                            .foregroundStyle(.teal)
+                            .clipShape(Capsule())
 
-                    // Key message
-                    Text(proposition.keyMessage)
-                        .font(.subheadline)
+                        // Key message
+                        Text(proposition.keyMessage)
+                            .font(.subheadline)
 
-                    // Date
-                    if let date = proposition.dateOfProposition {
-                        Text(dateFormatter.string(from: date))
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
+                        // Date
+                        if let date = proposition.dateOfProposition {
+                            Text(dateFormatter.string(from: date))
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
                     }
+                    .padding(.vertical, 2)
                 }
-                .padding(.vertical, 2)
             }
         } header: {
             Label("Kernaussagen (\(wortmeldung.propositions.count))", systemImage: "lightbulb")
