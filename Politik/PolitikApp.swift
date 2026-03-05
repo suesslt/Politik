@@ -14,6 +14,7 @@ struct PolitikApp: App {
             PersonInterest.self,
             PersonOccupation.self,
             Proposition.self,
+            DailyReport.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
@@ -48,6 +49,10 @@ struct PolitikApp: App {
                 WortmeldungListView()
                     .tabItem {
                         Label("Wortmeldungen", systemImage: "text.quote")
+                    }
+                DailyReportListView()
+                    .tabItem {
+                        Label("Tagesberichte", systemImage: "newspaper")
                     }
                 DataManagementView()
                     .tabItem {
