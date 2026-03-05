@@ -205,9 +205,16 @@ struct SessionRowView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
-            Text("\(session.geschaefte.count) Geschäfte")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            HStack(spacing: 8) {
+                Text("\(session.geschaefte.count) Geschäfte")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if let lastSync = session.lastSyncDate {
+                    Text("· \(lastSync, style: .relative) her")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+            }
         }
         .padding(.vertical, 2)
     }

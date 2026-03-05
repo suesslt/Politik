@@ -34,6 +34,7 @@ struct ExportSession: Codable {
     let typeName: String
     let legislativePeriodNumber: Int
     let isSynced: Bool
+    let lastSyncDate: Date?
 }
 
 struct ExportGeschaeft: Codable {
@@ -233,7 +234,8 @@ final class DataExportImportService {
                     type: s.type,
                     typeName: s.typeName,
                     legislativePeriodNumber: s.legislativePeriodNumber,
-                    isSynced: s.isSynced
+                    isSynced: s.isSynced,
+                    lastSyncDate: s.lastSyncDate
                 )
             },
             geschaefte: geschaefte.map { g in
@@ -449,6 +451,7 @@ final class DataExportImportService {
                 legislativePeriodNumber: dto.legislativePeriodNumber
             )
             session.isSynced = dto.isSynced
+            session.lastSyncDate = dto.lastSyncDate
             modelContext.insert(session)
             sessionLookup[dto.id] = session
         }

@@ -16,7 +16,14 @@ struct ParlamentService {
     // MARK: - Fetch Geschaefte for a Session
 
     func fetchGeschaefte(sessionID: Int) async throws -> [GeschaeftDTO] {
-        let urlString = "\(baseURL)/Session(ID=\(sessionID),Language='DE')/Businesses?$format=json&$select=ID,BusinessShortNumber,Title,BusinessTypeName,BusinessTypeAbbreviation,BusinessStatusText,BusinessStatusDate,SubmissionDate,SubmittedBy,Description,SubmissionCouncilName,ResponsibleDepartmentName,ResponsibleDepartmentAbbreviation,TagNames"
+        let urlString = "\(baseURL)/Session(ID=\(sessionID),Language='DE')/Businesses?$format=json&$select=ID,BusinessShortNumber,Title,BusinessTypeName,BusinessTypeAbbreviation,BusinessStatusText,BusinessStatusDate,SubmissionDate,SubmittedBy,Description,SubmissionCouncilName,ResponsibleDepartmentName,ResponsibleDepartmentAbbreviation,TagNames,Modified"
+        return try await fetchAllPages(from: urlString)
+    }
+
+    /// Fetch only Geschaefte modified after a given date
+    func fetchGeschaefteModifiedSince(sessionID: Int, since: Date) async throws -> [GeschaeftDTO] {
+        let dateString = ODataDateFormatter.format(since)
+        let urlString = "\(baseURL)/Session(ID=\(sessionID),Language='DE')/Businesses?$format=json&$filter=Modified%20gt%20datetime'\(dateString)'&$select=ID,BusinessShortNumber,Title,BusinessTypeName,BusinessTypeAbbreviation,BusinessStatusText,BusinessStatusDate,SubmissionDate,SubmittedBy,Description,SubmissionCouncilName,ResponsibleDepartmentName,ResponsibleDepartmentAbbreviation,TagNames,Modified"
         return try await fetchAllPages(from: urlString)
     }
 
@@ -94,7 +101,14 @@ struct ParlamentService {
     // MARK: - Fetch Votes for a Session
 
     func fetchVotes(sessionID: Int) async throws -> [VoteDTO] {
-        let urlString = "\(baseURL)/Vote?$filter=Language%20eq%20'DE'%20and%20IdSession%20eq%20\(sessionID)&$format=json&$select=ID,BusinessNumber,BusinessShortNumber,BillTitle,IdSession,Subject,MeaningYes,MeaningNo,VoteEnd"
+        let urlString = "\(baseURL)/Vote?$filter=Language%20eq%20'DE'%20and%20IdSession%20eq%20\(sessionID)&$format=json&$select=ID,BusinessNumber,BusinessShortNumber,BillTitle,IdSession,Subject,MeaningYes,MeaningNo,VoteEnd,Modified"
+        return try await fetchAllPages(from: urlString)
+    }
+
+    /// Fetch only Votes modified after a given date
+    func fetchVotesModifiedSince(sessionID: Int, since: Date) async throws -> [VoteDTO] {
+        let dateString = ODataDateFormatter.format(since)
+        let urlString = "\(baseURL)/Vote?$filter=Language%20eq%20'DE'%20and%20IdSession%20eq%20\(sessionID)%20and%20Modified%20gt%20datetime'\(dateString)'&$format=json&$select=ID,BusinessNumber,BusinessShortNumber,BillTitle,IdSession,Subject,MeaningYes,MeaningNo,VoteEnd,Modified"
         return try await fetchAllPages(from: urlString)
     }
 
@@ -217,6 +231,7 @@ struct GeschaeftDTO: Decodable, Sendable {
     let ResponsibleDepartmentName: String?
     let ResponsibleDepartmentAbbreviation: String?
     let TagNames: String?
+    let Modified: String?
 }
 
 struct TranscriptDTO: Decodable, Sendable {
@@ -292,6 +307,7 @@ struct VoteDTO: Decodable, Sendable {
     let MeaningYes: String?
     let MeaningNo: String?
     let VoteEnd: String?
+    let Modified: String?
 }
 
 struct VotingDTO: Decodable, Sendable {
@@ -329,6 +345,19 @@ enum ODataDateParser {
         let milliseconds = String(dateString[range])
         guard let ms = Double(milliseconds) else { return nil }
         return Date(timeIntervalSince1970: ms / 1000.0)
+    }
+}
+
+// MARK: - OData Date Formatting (for $filter)
+
+enum ODataDateFormatter {
+    /// Formats a Date as "yyyy-MM-dd'T'HH:mm:ss" for OData $filter datetime literals
+    static func format(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(identifier: "UTC")
+        return formatter.string(from: date)
     }
 }
 

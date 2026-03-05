@@ -19,10 +19,13 @@ final class SessionSyncService {
     struct SyncStats: Equatable {
         var sessionsProcessed = 0
         var geschaefteProcessed = 0
+        var geschaefteUpdated = 0
+        var geschaefteSkipped = 0
         var wortmeldungenCreated = 0
         var abstimmungenCreated = 0
         var stimmabgabenCreated = 0
         var errorsEncountered = 0
+        var isIncremental = false
     }
 
     struct SyncError: Identifiable {
@@ -58,9 +61,13 @@ final class SessionSyncService {
                 try Task.checkCancellation()
                 phase = .syncingSession(name: session.sessionName, index: index + 1, total: sessions.count)
 
+                let isIncremental = session.lastSyncDate != nil
+                stats.isIncremental = isIncremental
+
                 try await syncSession(session, parlamentarierLookup: &lookup, modelContext: modelContext)
 
                 session.isSynced = true
+                session.lastSyncDate = Date()
                 try modelContext.save()
                 stats.sessionsProcessed += 1
             }
@@ -115,43 +122,71 @@ final class SessionSyncService {
     // MARK: - Session Sync
 
     private func syncSession(_ session: Session, parlamentarierLookup: inout [Int: Parlamentarier], modelContext: ModelContext) async throws {
-        // Fetch Geschaefte for this session
-        let geschaefteDTOs = try await service.fetchGeschaefte(sessionID: session.id)
+        let lastSync = session.lastSyncDate
+        let isIncremental = lastSync != nil
 
-        let existingIDs = Set(session.geschaefte.map(\.id))
+        // Fetch Geschaefte – incremental if possible
+        let geschaefteDTOs: [GeschaeftDTO]
+        if let lastSync {
+            geschaefteDTOs = try await service.fetchGeschaefteModifiedSince(sessionID: session.id, since: lastSync)
+        } else {
+            geschaefteDTOs = try await service.fetchGeschaefte(sessionID: session.id)
+        }
+
+        let existingLookup = Dictionary(uniqueKeysWithValues: session.geschaefte.map { ($0.id, $0) })
+        var modifiedGeschaeftIDs: Set<Int> = []
+
         for dto in geschaefteDTOs {
-            guard !existingIDs.contains(dto.ID) else { continue }
-            let geschaeft = Geschaeft(
-                id: dto.ID,
-                businessShortNumber: dto.BusinessShortNumber ?? "",
-                title: dto.Title ?? "",
-                businessTypeName: dto.BusinessTypeName ?? "",
-                businessTypeAbbreviation: dto.BusinessTypeAbbreviation ?? "",
-                businessStatusText: dto.BusinessStatusText ?? "",
-                businessStatusDate: ODataDateParser.parse(dto.BusinessStatusDate),
-                submissionDate: ODataDateParser.parse(dto.SubmissionDate),
-                submittedBy: dto.SubmittedBy,
-                descriptionText: dto.Description,
-                submissionCouncilName: dto.SubmissionCouncilName,
-                responsibleDepartmentName: dto.ResponsibleDepartmentName,
-                responsibleDepartmentAbbreviation: dto.ResponsibleDepartmentAbbreviation,
-                tagNames: dto.TagNames,
-                session: session
-            )
-            modelContext.insert(geschaeft)
+            if let existing = existingLookup[dto.ID] {
+                // Update existing Geschaeft with latest data
+                existing.title = dto.Title ?? existing.title
+                existing.businessStatusText = dto.BusinessStatusText ?? existing.businessStatusText
+                existing.businessStatusDate = ODataDateParser.parse(dto.BusinessStatusDate) ?? existing.businessStatusDate
+                existing.descriptionText = dto.Description ?? existing.descriptionText
+                existing.tagNames = dto.TagNames ?? existing.tagNames
+                modifiedGeschaeftIDs.insert(dto.ID)
+                stats.geschaefteUpdated += 1
+            } else {
+                let geschaeft = Geschaeft(
+                    id: dto.ID,
+                    businessShortNumber: dto.BusinessShortNumber ?? "",
+                    title: dto.Title ?? "",
+                    businessTypeName: dto.BusinessTypeName ?? "",
+                    businessTypeAbbreviation: dto.BusinessTypeAbbreviation ?? "",
+                    businessStatusText: dto.BusinessStatusText ?? "",
+                    businessStatusDate: ODataDateParser.parse(dto.BusinessStatusDate),
+                    submissionDate: ODataDateParser.parse(dto.SubmissionDate),
+                    submittedBy: dto.SubmittedBy,
+                    descriptionText: dto.Description,
+                    submissionCouncilName: dto.SubmissionCouncilName,
+                    responsibleDepartmentName: dto.ResponsibleDepartmentName,
+                    responsibleDepartmentAbbreviation: dto.ResponsibleDepartmentAbbreviation,
+                    tagNames: dto.TagNames,
+                    session: session
+                )
+                modelContext.insert(geschaeft)
+                modifiedGeschaeftIDs.insert(dto.ID)
+            }
         }
         try modelContext.save()
 
-        // Process each Geschaeft (Urheber + Transcripts)
-        let geschaefte = session.geschaefte
-        let total = geschaefte.count
+        // Process Geschaefte (Urheber + Transcripts)
+        // In incremental mode: only process new/modified Geschaefte
+        let geschaefteToProcess: [Geschaeft]
+        if isIncremental {
+            geschaefteToProcess = session.geschaefte.filter { modifiedGeschaeftIDs.contains($0.id) || !$0.wortmeldungen.contains(where: \.isRede) }
+            stats.geschaefteSkipped = session.geschaefte.count - geschaefteToProcess.count
+        } else {
+            geschaefteToProcess = session.geschaefte
+        }
 
-        for (index, geschaeft) in geschaefte.enumerated() {
+        let total = geschaefteToProcess.count
+        for (index, geschaeft) in geschaefteToProcess.enumerated() {
             try Task.checkCancellation()
             phase = .syncingGeschaeft(title: geschaeft.businessShortNumber, current: index + 1, total: total)
 
             do {
-                try await syncGeschaeft(geschaeft, parlamentarierLookup: &parlamentarierLookup, modelContext: modelContext)
+                try await syncGeschaeft(geschaeft, forceReloadTranscripts: modifiedGeschaeftIDs.contains(geschaeft.id), parlamentarierLookup: &parlamentarierLookup, modelContext: modelContext)
                 stats.geschaefteProcessed += 1
             } catch is CancellationError {
                 throw CancellationError()
@@ -166,18 +201,18 @@ final class SessionSyncService {
         }
 
         // Sync Abstimmungen for this session
-        try await syncAbstimmungen(for: session, parlamentarierLookup: parlamentarierLookup, modelContext: modelContext)
+        try await syncAbstimmungen(for: session, lastSync: lastSync, parlamentarierLookup: parlamentarierLookup, modelContext: modelContext)
     }
 
     // MARK: - Geschaeft Sync
 
-    private func syncGeschaeft(_ geschaeft: Geschaeft, parlamentarierLookup: inout [Int: Parlamentarier], modelContext: ModelContext) async throws {
+    private func syncGeschaeft(_ geschaeft: Geschaeft, forceReloadTranscripts: Bool, parlamentarierLookup: inout [Int: Parlamentarier], modelContext: ModelContext) async throws {
         if geschaeft.urheber == nil {
             try await loadUrheber(for: geschaeft, parlamentarierLookup: &parlamentarierLookup, modelContext: modelContext)
         }
 
         let hasSpeeches = geschaeft.wortmeldungen.contains { $0.isRede }
-        if !hasSpeeches {
+        if !hasSpeeches || forceReloadTranscripts {
             try await loadTranscripts(for: geschaeft, parlamentarierLookup: parlamentarierLookup, modelContext: modelContext)
         }
 
@@ -272,9 +307,14 @@ final class SessionSyncService {
 
     // MARK: - Abstimmungen Sync
 
-    private func syncAbstimmungen(for session: Session, parlamentarierLookup: [Int: Parlamentarier], modelContext: ModelContext) async throws {
-        // Fetch all Votes for this session
-        let voteDTOs = try await service.fetchVotes(sessionID: session.id)
+    private func syncAbstimmungen(for session: Session, lastSync: Date?, parlamentarierLookup: [Int: Parlamentarier], modelContext: ModelContext) async throws {
+        // Fetch Votes – incremental if possible
+        let voteDTOs: [VoteDTO]
+        if let lastSync {
+            voteDTOs = try await service.fetchVotesModifiedSince(sessionID: session.id, since: lastSync)
+        } else {
+            voteDTOs = try await service.fetchVotes(sessionID: session.id)
+        }
 
         // Build Geschaeft lookup by ID for linking
         let geschaeftDescriptor = FetchDescriptor<Geschaeft>()

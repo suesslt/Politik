@@ -64,9 +64,16 @@ struct SessionSyncView: View {
                                             .foregroundStyle(.green)
                                     }
                                 }
-                                Text("\(session.geschaefte.count) Geschäfte")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                HStack(spacing: 8) {
+                                    Text("\(session.geschaefte.count) Geschäfte")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    if let lastSync = session.lastSyncDate {
+                                        Text("· Sync: \(lastSync, style: .relative) her")
+                                            .font(.caption)
+                                            .foregroundStyle(.tertiary)
+                                    }
+                                }
                             }
                             .foregroundStyle(.primary)
                         }
@@ -207,8 +214,20 @@ struct SessionSyncView: View {
             }
 
             Section("Zusammenfassung") {
+                if syncService.stats.isIncremental {
+                    Label("Inkrementelle Synchronisation", systemImage: "bolt.fill")
+                        .font(.caption)
+                        .foregroundStyle(.blue)
+                }
                 LabeledContent("Sessionen", value: "\(syncService.stats.sessionsProcessed)")
-                LabeledContent("Geschäfte", value: "\(syncService.stats.geschaefteProcessed)")
+                LabeledContent("Geschäfte verarbeitet", value: "\(syncService.stats.geschaefteProcessed)")
+                if syncService.stats.geschaefteUpdated > 0 {
+                    LabeledContent("Geschäfte aktualisiert", value: "\(syncService.stats.geschaefteUpdated)")
+                }
+                if syncService.stats.geschaefteSkipped > 0 {
+                    LabeledContent("Geschäfte übersprungen", value: "\(syncService.stats.geschaefteSkipped)")
+                        .foregroundStyle(.secondary)
+                }
                 LabeledContent("Wortmeldungen", value: "\(syncService.stats.wortmeldungenCreated)")
                 LabeledContent("Abstimmungen", value: "\(syncService.stats.abstimmungenCreated)")
                 LabeledContent("Stimmabgaben", value: "\(syncService.stats.stimmabgabenCreated)")
