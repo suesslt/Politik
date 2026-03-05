@@ -16,6 +16,8 @@ struct ExportContainer: Codable {
     var personOccupations: [ExportPersonOccupation]
     // Added in v2 – optional for backward compatibility with v1 exports
     var propositions: [ExportProposition]?
+    // Added in v3 – optional for backward compatibility
+    var dailyReports: [ExportDailyReport]?
 }
 
 // MARK: - Export DTOs
@@ -174,6 +176,17 @@ struct ExportProposition: Codable {
     let wortmeldungID: String?
 }
 
+struct ExportDailyReport: Codable {
+    let id: String  // UUID as string
+    let sessionId: Int
+    let sessionName: String
+    let reportDate: Date
+    let content: String
+    let createdAt: Date
+    // Relationship as ID
+    let sessionRefID: Int?
+}
+
 // MARK: - Export/Import Service
 
 @MainActor @Observable
@@ -203,6 +216,7 @@ final class DataExportImportService {
         let personInterests = try modelContext.fetch(FetchDescriptor<PersonInterest>())
         let personOccupations = try modelContext.fetch(FetchDescriptor<PersonOccupation>())
         let propositions = try modelContext.fetch(FetchDescriptor<Proposition>())
+        let dailyReports = try modelContext.fetch(FetchDescriptor<DailyReport>())
 
         let container = ExportContainer(
             exportDate: Date(),
@@ -359,6 +373,17 @@ final class DataExportImportService {
                     parlamentarierPersonNumber: p.parlamentarier?.personNumber,
                     wortmeldungID: p.wortmeldung?.id
                 )
+            },
+            dailyReports: dailyReports.map { r in
+                ExportDailyReport(
+                    id: r.id.uuidString,
+                    sessionId: r.sessionId,
+                    sessionName: r.sessionName,
+                    reportDate: r.reportDate,
+                    content: r.content,
+                    createdAt: r.createdAt,
+                    sessionRefID: r.session?.id
+                )
             }
         )
 
@@ -372,7 +397,7 @@ final class DataExportImportService {
         \(parlamentarierList.count) Parlamentarier, \(wortmeldungen.count) Wortmeldungen, \
         \(abstimmungen.count) Abstimmungen, \(stimmabgaben.count) Stimmabgaben, \
         \(personInterests.count) Interessen, \(personOccupations.count) Berufe, \
-        \(propositions.count) Propositionen
+        \(propositions.count) Propositionen, \(dailyReports.count) Tagesberichte
         """
         phase = .completed(message: "Export abgeschlossen: \(counts)")
         return data
@@ -395,6 +420,7 @@ final class DataExportImportService {
 
         // Step 1: Delete all existing data
         phase = .importing(step: "Bestehende Daten löschen…")
+        try modelContext.delete(model: DailyReport.self)
         try modelContext.delete(model: Proposition.self)
         try modelContext.delete(model: Stimmabgabe.self)
         try modelContext.delete(model: PersonInterest.self)
@@ -625,13 +651,35 @@ final class DataExportImportService {
             try modelContext.save()
         }
 
+        // Step 11: Import DailyReports (→ Session)
+        let exportedReports = container.dailyReports ?? []
+        if !exportedReports.isEmpty {
+            phase = .importing(step: "Tagesberichte importieren (\(exportedReports.count))…")
+            for dto in exportedReports {
+                let report = DailyReport(
+                    sessionId: dto.sessionId,
+                    sessionName: dto.sessionName,
+                    reportDate: dto.reportDate,
+                    content: dto.content,
+                    session: dto.sessionRefID.flatMap { sessionLookup[$0] }
+                )
+                if let uuid = UUID(uuidString: dto.id) {
+                    report.id = uuid
+                }
+                report.createdAt = dto.createdAt
+                modelContext.insert(report)
+            }
+            try modelContext.save()
+        }
+
         let propCount = exportedPropositions.count
+        let reportCount = exportedReports.count
         let counts = """
         \(container.sessions.count) Sessionen, \(container.geschaefte.count) Geschäfte, \
         \(container.parlamentarier.count) Parlamentarier, \(container.wortmeldungen.count) Wortmeldungen, \
         \(container.abstimmungen.count) Abstimmungen, \(container.stimmabgaben.count) Stimmabgaben, \
         \(container.personInterests.count) Interessen, \(container.personOccupations.count) Berufe, \
-        \(propCount) Propositionen
+        \(propCount) Propositionen, \(reportCount) Tagesberichte
         """
         phase = .completed(message: "Import abgeschlossen: \(counts)")
     }

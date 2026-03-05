@@ -277,6 +277,25 @@ final class ClaudeService {
         phase = .completed(successCount: 1, errorCount: 0)
     }
 
+    // MARK: - Public: Generate Daily Report
+
+    func generateDailyReport(
+        session: Session,
+        reportDate: Date,
+        geschaefte: [Geschaeft],
+        modelContext: ModelContext
+    ) async throws -> String {
+        let apiKey = try getApiKey()
+        let prompt = buildDailyReportPrompt(session: session, reportDate: reportDate, geschaefte: geschaefte)
+
+        phase = .analyzing(current: 1, total: 1, title: "Tagesbericht")
+
+        let reportContent = try await callClaudeForText(prompt: prompt, apiKey: apiKey)
+
+        phase = .completed(successCount: 1, errorCount: 0)
+        return reportContent
+    }
+
     func reset() {
         phase = .idle
     }
@@ -669,6 +688,191 @@ final class ClaudeService {
         formatter.dateFormat = "yyyyMMdd"
         formatter.locale = Locale(identifier: "de_CH")
         return formatter.date(from: dateString)
+    }
+
+    // MARK: - Private: Claude API Call for Text (Daily Report)
+
+    private func callClaudeForText(prompt: String, apiKey: String) async throws -> String {
+        let url = URL(string: "https://api.anthropic.com/v1/messages")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
+        request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+        request.setValue("application/json", forHTTPHeaderField: "content-type")
+
+        let body = ClaudeRequest(
+            model: "claude-sonnet-4-20250514",
+            max_tokens: 8192,
+            tools: [],
+            messages: [ClaudeMessage(role: "user", content: prompt)]
+        )
+
+        request.httpBody = try JSONEncoder().encode(body)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw ClaudeError.networkError
+        }
+        guard (200...299).contains(httpResponse.statusCode) else {
+            let responseBody = String(data: data, encoding: .utf8) ?? ""
+            throw ClaudeError.apiError(statusCode: httpResponse.statusCode, body: responseBody)
+        }
+
+        let claudeResponse = try JSONDecoder().decode(ClaudeResponse.self, from: data)
+
+        let allText = claudeResponse.content
+            .filter { $0.type == "text" }
+            .compactMap(\.text)
+            .joined(separator: "\n")
+
+        guard !allText.isEmpty else {
+            throw ClaudeError.parsingError(detail: "Leere Antwort von Claude")
+        }
+
+        return allText
+    }
+
+    // MARK: - Private: Build Daily Report Prompt
+
+    private func buildDailyReportPrompt(session: Session, reportDate: Date, geschaefte: [Geschaeft]) -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .long
+        dateFormatter.locale = Locale(identifier: "de_CH")
+        let dateString = dateFormatter.string(from: reportDate)
+
+        let shortFormatter = DateFormatter()
+        shortFormatter.dateFormat = "yyyyMMdd"
+        let dateKey = shortFormatter.string(from: reportDate)
+
+        var parts: [String] = []
+
+        parts.append("""
+        Du bist ein erfahrener Parlamentsjournalist der Schweiz. Erstelle einen Tagesbericht über die \
+        Verhandlungen im Schweizer Parlament vom \(dateString) während der Session «\(session.sessionName)».
+
+        Der Bericht soll im Markdown-Format verfasst werden und folgende Struktur haben:
+
+        # Parlamentsbericht \(dateString)
+        ## Session: \(session.sessionName)
+
+        Dann für jeden Rat (Nationalrat und Ständerat) getrennt:
+
+        ## Nationalrat / ## Ständerat
+
+        ### [Geschäftstitel] ([Geschäftsnummer])
+        - Kurze Zusammenfassung des Geschäfts
+        - **Debatte:** Journalistische Zusammenfassung der Wortmeldungen. Pointierte Meinungen und \
+        Widersprüche sollen hervorgehoben werden. Schreibe lebendig und anschaulich.
+        - **Abstimmung:** Resultat mit Fraktionsstimmverhalten
+
+        Wichtige Regeln:
+        - Schreibe auf Deutsch (Schweizer Hochdeutsch)
+        - Journalistischer, lebendiger Stil
+        - Pointierte Meinungen und Kontroversen hervorheben
+        - Bei Abstimmungen zeige das Stimmverhalten der Fraktionen
+        - Nur Geschäfte aufnehmen, zu denen Wortmeldungen oder Abstimmungen vom angegebenen Tag vorliegen
+        - Wenn keine Daten für einen Rat vorliegen, den Abschnitt weglassen
+        """)
+
+        // Group by council
+        let nationalratGeschaefte = geschaefte.filter { g in
+            g.wortmeldungen.contains { $0.councilName == "Nationalrat" && $0.meetingDate == dateKey } ||
+            g.abstimmungen.contains { abstimmung in
+                if let voteEnd = abstimmung.voteEnd {
+                    return Calendar.current.isDate(voteEnd, inSameDayAs: reportDate)
+                }
+                return false
+            }
+        }
+
+        let staenderatGeschaefte = geschaefte.filter { g in
+            g.wortmeldungen.contains { $0.councilName == "Ständerat" && $0.meetingDate == dateKey } ||
+            g.abstimmungen.contains { abstimmung in
+                if let voteEnd = abstimmung.voteEnd {
+                    return Calendar.current.isDate(voteEnd, inSameDayAs: reportDate)
+                }
+                return false
+            }
+        }
+
+        if !nationalratGeschaefte.isEmpty {
+            parts.append("\n---\n## Daten Nationalrat\n")
+            for geschaeft in nationalratGeschaefte {
+                parts.append(buildGeschaeftSection(geschaeft, council: "Nationalrat", dateKey: dateKey, reportDate: reportDate))
+            }
+        }
+
+        if !staenderatGeschaefte.isEmpty {
+            parts.append("\n---\n## Daten Ständerat\n")
+            for geschaeft in staenderatGeschaefte {
+                parts.append(buildGeschaeftSection(geschaeft, council: "Ständerat", dateKey: dateKey, reportDate: reportDate))
+            }
+        }
+
+        if nationalratGeschaefte.isEmpty && staenderatGeschaefte.isEmpty {
+            parts.append("\nHINWEIS: Es liegen keine Wortmeldungen oder Abstimmungen für dieses Datum vor. Erstelle einen kurzen Bericht, der dies feststellt.")
+        }
+
+        return parts.joined(separator: "\n")
+    }
+
+    private func buildGeschaeftSection(_ geschaeft: Geschaeft, council: String, dateKey: String, reportDate: Date) -> String {
+        var section = ""
+        section += "### Geschäft: \(geschaeft.businessShortNumber) – \(geschaeft.title)\n"
+        section += "- Typ: \(geschaeft.businessTypeName)\n"
+        section += "- Status: \(geschaeft.businessStatusText)\n"
+
+        if let desc = geschaeft.descriptionText, !desc.isEmpty {
+            section += "- Beschreibung: \(String(desc.prefix(300)))\n"
+        }
+
+        // Wortmeldungen for this day and council
+        let daySpeeches = geschaeft.wortmeldungen
+            .filter { $0.councilName == council && $0.meetingDate == dateKey && $0.isRede }
+            .sorted { $0.sortOrder < $1.sortOrder }
+
+        if !daySpeeches.isEmpty {
+            section += "\n#### Wortmeldungen (\(daySpeeches.count)):\n"
+            for speech in daySpeeches {
+                let group = speech.parlGroupAbbreviation ?? "?"
+                let plainText = String(speech.plainText.prefix(500))
+                section += "- **\(speech.speakerFullName)** (\(group)): \(plainText)\n"
+            }
+        }
+
+        // Abstimmungen for this day
+        let dayVotes = geschaeft.abstimmungen.filter { abstimmung in
+            if let voteEnd = abstimmung.voteEnd {
+                return Calendar.current.isDate(voteEnd, inSameDayAs: reportDate)
+            }
+            return false
+        }
+
+        if !dayVotes.isEmpty {
+            section += "\n#### Abstimmungen:\n"
+            for abstimmung in dayVotes {
+                let subject = abstimmung.subject ?? "Abstimmung"
+                let meaningYes = abstimmung.meaningYes ?? "Ja"
+                let meaningNo = abstimmung.meaningNo ?? "Nein"
+                section += "- **\(subject)**\n"
+                section += "  - Bedeutung Ja: \(meaningYes) / Nein: \(meaningNo)\n"
+                section += "  - Resultat: Ja=\(abstimmung.jaCount), Nein=\(abstimmung.neinCount), Enthaltung=\(abstimmung.enthaltungCount)\n"
+
+                // Group votes by faction
+                let factionVotes = Dictionary(grouping: abstimmung.stimmabgaben) { $0.parlamentarier?.parlGroupAbbreviation ?? "?" }
+                var factionSummaries: [String] = []
+                for (faction, votes) in factionVotes.sorted(by: { $0.key < $1.key }) {
+                    let ja = votes.filter { $0.decision == 1 }.count
+                    let nein = votes.filter { $0.decision == 2 }.count
+                    let enth = votes.filter { $0.decision == 3 }.count
+                    factionSummaries.append("\(faction): Ja=\(ja) Nein=\(nein) Enth=\(enth)")
+                }
+                section += "  - Fraktionen: \(factionSummaries.joined(separator: " | "))\n"
+            }
+        }
+
+        return section
     }
 
     // MARK: - Shared instructions
