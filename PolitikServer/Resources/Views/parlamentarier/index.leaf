@@ -1,0 +1,78 @@
+#extend("base"):
+#export("content"):
+<h1>Parlamentarier (#count(parlamentarier))</h1>
+
+<form method="GET" action="/parlamentarier" class="row g-3 mb-4">
+    <div class="col-md-3">
+        <input type="text" name="q" class="form-control" placeholder="Suche..." value="#(query)">
+    </div>
+    <div class="col-md-2">
+        <select name="faction" class="form-select">
+            <option value="">Alle Fraktionen</option>
+            #for(f in factions):
+            <option value="#(f)" #if(f == faction):selected#endif>#(f)</option>
+            #endfor
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="canton" class="form-select">
+            <option value="">Alle Kantone</option>
+            #for(c in cantons):
+            <option value="#(c)" #if(c == canton):selected#endif>#(c)</option>
+            #endfor
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="council" class="form-select">
+            <option value="">Alle Raete</option>
+            <option value="Nationalrat" #if(council == "Nationalrat"):selected#endif>Nationalrat</option>
+            <option value="Ständerat" #if(council == "Ständerat"):selected#endif>Staenderat</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="sort" class="form-select">
+            <option value="name" #if(sort == "name"):selected#endif>Name</option>
+            <option value="party" #if(sort == "party"):selected#endif>Partei</option>
+            <option value="canton" #if(sort == "canton"):selected#endif>Kanton</option>
+            <option value="faction" #if(sort == "faction"):selected#endif>Fraktion</option>
+        </select>
+    </div>
+    <div class="col-md-1">
+        <button type="submit" class="btn btn-primary">Filter</button>
+    </div>
+</form>
+
+<div class="table-responsive">
+    <table class="table table-hover table-sm">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Partei</th>
+                <th>Fraktion</th>
+                <th>Kanton</th>
+                <th>Rat</th>
+                <th>Analyse</th>
+            </tr>
+        </thead>
+        <tbody>
+            #for(p in parlamentarier):
+            <tr>
+                <td>
+                    <a href="/parlamentarier/#(p.id)">#(p.lastName), #(p.firstName)</a>
+                </td>
+                <td>#(p.partyAbbreviation)</td>
+                <td>#(p.parlGroupAbbreviation)</td>
+                <td>#(p.cantonAbbreviation)</td>
+                <td>#(p.councilAbbreviation)</td>
+                <td>
+                    #if(p.linksRechts):
+                    <span class="badge bg-success">Analysiert</span>
+                    #endif
+                </td>
+            </tr>
+            #endfor
+        </tbody>
+    </table>
+</div>
+#endexport
+#endextend

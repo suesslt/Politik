@@ -1,0 +1,124 @@
+#extend("base"):
+#export("content"):
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/parlamentarier">Parlamentarier</a></li>
+        <li class="breadcrumb-item active">#(person.firstName) #(person.lastName)</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>#(person.firstName) #(person.lastName)</h1>
+    <form method="POST" action="/parlamentarier/#(person.id)/analyze">
+        <button type="submit" class="btn btn-outline-primary">Analysieren</button>
+    </form>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Profil</div>
+            <div class="card-body">
+                <p><strong>Partei:</strong> #(person.partyName) (#(person.partyAbbreviation))</p>
+                <p><strong>Fraktion:</strong> #(person.parlGroupName) (#(person.parlGroupAbbreviation))</p>
+                <p><strong>Kanton:</strong> #(person.cantonName) (#(person.cantonAbbreviation))</p>
+                <p><strong>Rat:</strong> #(person.councilName)</p>
+                #if(person.dateOfBirth):
+                <p><strong>Geburtsdatum:</strong> #date(person.dateOfBirth, "dd.MM.yyyy")</p>
+                #endif
+                #if(person.birthPlaceCity):
+                <p><strong>Geburtsort:</strong> #(person.birthPlaceCity)</p>
+                #endif
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        #if(person.linksRechts):
+        <div class="card">
+            <div class="card-header">Analyse</div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <small>Links/Rechts</small>
+                    <div class="progress"><div class="progress-bar" style="width: #(((person.linksRechts ?? 0) + 1) / 2 * 100)%"></div></div>
+                </div>
+                <div class="mb-2">
+                    <small>Konservativ/Liberal</small>
+                    <div class="progress"><div class="progress-bar bg-info" style="width: #(((person.konservativLiberal ?? 0) + 1) / 2 * 100)%"></div></div>
+                </div>
+                <div class="mb-2">
+                    <small>Liberale Wirtschaft</small>
+                    <div class="progress"><div class="progress-bar bg-success" style="width: #((person.liberaleWirtschaft ?? 0) * 100)%"></div></div>
+                </div>
+                <div class="mb-2">
+                    <small>Innovation</small>
+                    <div class="progress"><div class="progress-bar bg-warning" style="width: #((person.innovativerStandort ?? 0) * 100)%"></div></div>
+                </div>
+            </div>
+        </div>
+        #endif
+    </div>
+</div>
+
+#if(count(occupations) > 0):
+<h3>Berufliche Taetigkeit</h3>
+<ul class="list-group mb-4">
+    #for(occ in occupations):
+    <li class="list-group-item">
+        <strong>#(occ.occupationName)</strong>
+        #if(occ.employer): &ndash; #(occ.employer)#endif
+        #if(occ.jobTitle): <small class="text-muted">(#(occ.jobTitle))</small>#endif
+    </li>
+    #endfor
+</ul>
+#endif
+
+#if(count(interests) > 0):
+<h3>Interessenbindungen</h3>
+<ul class="list-group mb-4">
+    #for(interest in interests):
+    <li class="list-group-item">
+        <strong>#(interest.interestName)</strong>
+        #if(interest.functionInAgencyText): &ndash; #(interest.functionInAgencyText)#endif
+        #if(interest.interestTypeText): <span class="badge bg-secondary">#(interest.interestTypeText)</span>#endif
+    </li>
+    #endfor
+</ul>
+#endif
+
+#if(count(recentVotes) > 0):
+<h3>Letzte Abstimmungen</h3>
+<div class="table-responsive">
+    <table class="table table-sm">
+        <thead><tr><th>Abstimmung</th><th>Entscheid</th></tr></thead>
+        <tbody>
+            #for(vote in recentVotes):
+            <tr>
+                <td>#(vote.abstimmung.subject)</td>
+                <td>
+                    <span class="badge #if(vote.decision == 1):bg-success#elseif(vote.decision == 2):bg-danger#else:bg-secondary#endif">
+                        #(vote.decisionDisplayText)
+                    </span>
+                </td>
+            </tr>
+            #endfor
+        </tbody>
+    </table>
+</div>
+#endif
+
+#if(count(propositions) > 0):
+<h3>Kernaussagen</h3>
+<div class="list-group mb-4">
+    #for(prop in propositions):
+    <div class="list-group-item">
+        <p class="mb-1">#(prop.keyMessage)</p>
+        <small class="text-muted">
+            <span class="badge bg-info">#(prop.subject)</span>
+            #(prop.geschaeftTitle)
+        </small>
+    </div>
+    #endfor
+</div>
+#endif
+#endexport
+#endextend

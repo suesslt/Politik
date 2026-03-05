@@ -1,0 +1,44 @@
+#extend("base"):
+#export("content"):
+<h1>Einstellungen</h1>
+
+<div class="card mb-4">
+    <div class="card-header">Datenbank</div>
+    <div class="card-body">
+        <p><strong>Host:</strong> #(dbHost)</p>
+        <p><strong>Datenbank:</strong> #(dbName)</p>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">Claude API</div>
+    <div class="card-body">
+        #if(hasApiKey):
+        <p><span class="badge bg-success">API-Key konfiguriert</span></p>
+        <p class="text-muted">Setze die Umgebungsvariable <code>CLAUDE_API_KEY</code> zum Aendern.</p>
+        #else:
+        <p><span class="badge bg-danger">Kein API-Key</span></p>
+        <p>Setze die Umgebungsvariable <code>CLAUDE_API_KEY</code> mit deinem Anthropic API-Key.</p>
+        <pre><code>export CLAUDE_API_KEY=sk-ant-...</code></pre>
+        #endif
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Umgebungsvariablen</div>
+    <div class="card-body">
+        <table class="table table-sm">
+            <thead><tr><th>Variable</th><th>Beschreibung</th><th>Standard</th></tr></thead>
+            <tbody>
+                <tr><td><code>DB_HOST</code></td><td>PostgreSQL Host</td><td>localhost</td></tr>
+                <tr><td><code>DB_PORT</code></td><td>PostgreSQL Port</td><td>5432</td></tr>
+                <tr><td><code>DB_USER</code></td><td>Datenbankbenutzer</td><td>politik</td></tr>
+                <tr><td><code>DB_PASSWORD</code></td><td>Datenbankpasswort</td><td>politik</td></tr>
+                <tr><td><code>DB_NAME</code></td><td>Datenbankname</td><td>politik</td></tr>
+                <tr><td><code>CLAUDE_API_KEY</code></td><td>Anthropic API-Key</td><td>&ndash;</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+#endexport
+#endextend

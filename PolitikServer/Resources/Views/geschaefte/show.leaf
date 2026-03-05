@@ -1,0 +1,130 @@
+#extend("base"):
+#export("content"):
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/sessions">Sessions</a></li>
+        #if(session):
+        <li class="breadcrumb-item"><a href="/sessions/#(session.id)">#(session.sessionName)</a></li>
+        #endif
+        <li class="breadcrumb-item active">#(geschaeft.businessShortNumber)</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>#(geschaeft.businessShortNumber) &ndash; #(geschaeft.title)</h1>
+    <form method="POST" action="/geschaefte/#(geschaeft.id)/analyze">
+        <button type="submit" class="btn btn-outline-primary">Analysieren</button>
+    </form>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <p><strong>Typ:</strong> #(geschaeft.businessTypeName) (#(geschaeft.businessTypeAbbreviation))</p>
+                <p><strong>Status:</strong> #(geschaeft.businessStatusText)</p>
+                #if(geschaeft.submittedBy):
+                <p><strong>Eingereicht von:</strong> #(geschaeft.submittedBy)</p>
+                #endif
+                #if(geschaeft.responsibleDepartmentName):
+                <p><strong>Departement:</strong> #(geschaeft.responsibleDepartmentName)</p>
+                #endif
+                #if(geschaeft.submissionCouncilName):
+                <p><strong>Rat:</strong> #(geschaeft.submissionCouncilName)</p>
+                #endif
+                #if(geschaeft.tagNames):
+                <p><strong>Themen:</strong> #(geschaeft.tagNames)</p>
+                #endif
+                #if(geschaeft.descriptionText):
+                <div class="mt-3">
+                    <h6>Beschreibung</h6>
+                    <p class="text-muted">#(geschaeft.descriptionText)</p>
+                </div>
+                #endif
+                #if(urheber):
+                <p><strong>Urheber:</strong>
+                    <a href="/parlamentarier/#(urheber.id)">#(urheber.firstName) #(urheber.lastName)</a>
+                    (#(urheber.partyAbbreviation), #(urheber.cantonAbbreviation))
+                </p>
+                #endif
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        #if(geschaeft.linksRechts):
+        <div class="card">
+            <div class="card-header">Analyse</div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <small>Links/Rechts</small>
+                    <div class="progress"><div class="progress-bar" style="width: #(((geschaeft.linksRechts ?? 0) + 1) / 2 * 100)%"></div></div>
+                </div>
+                <div class="mb-2">
+                    <small>Konservativ/Liberal</small>
+                    <div class="progress"><div class="progress-bar bg-info" style="width: #(((geschaeft.konservativLiberal ?? 0) + 1) / 2 * 100)%"></div></div>
+                </div>
+                <div class="mb-2">
+                    <small>Liberale Wirtschaft</small>
+                    <div class="progress"><div class="progress-bar bg-success" style="width: #((geschaeft.liberaleWirtschaft ?? 0) * 100)%"></div></div>
+                </div>
+                <div class="mb-2">
+                    <small>Innovation</small>
+                    <div class="progress"><div class="progress-bar bg-warning" style="width: #((geschaeft.innovativerStandort ?? 0) * 100)%"></div></div>
+                </div>
+                <div class="mb-2">
+                    <small>Stromversorgung</small>
+                    <div class="progress"><div class="progress-bar bg-danger" style="width: #((geschaeft.unabhaengigeStromversorgung ?? 0) * 100)%"></div></div>
+                </div>
+            </div>
+        </div>
+        #endif
+    </div>
+</div>
+
+#if(count(wortmeldungen) > 0):
+<h2>Wortmeldungen (#count(wortmeldungen))</h2>
+<div class="accordion mb-4" id="wortmeldungen">
+    #for(wm in wortmeldungen):
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#wm-#(wm.id)">
+                <strong>#(wm.speakerFullName)</strong>&nbsp;
+                <span class="badge bg-secondary me-2">#(wm.parlGroupAbbreviation)</span>
+                #if(wm.speakerFunction):
+                <small class="text-muted">#(wm.speakerFunction)</small>
+                #endif
+            </button>
+        </h2>
+        <div id="wm-#(wm.id)" class="accordion-collapse collapse" data-bs-parent="#wortmeldungen">
+            <div class="accordion-body">
+                #(wm.text)
+            </div>
+        </div>
+    </div>
+    #endfor
+</div>
+#endif
+
+#if(count(abstimmungen) > 0):
+<h2>Abstimmungen (#count(abstimmungen))</h2>
+#for(abstimmung in abstimmungen):
+<div class="card mb-3">
+    <div class="card-header">
+        <strong>#(abstimmung.subject)</strong>
+        #if(abstimmung.voteEnd):
+        <small class="text-muted float-end">#date(abstimmung.voteEnd, "dd.MM.yyyy HH:mm")</small>
+        #endif
+    </div>
+    <div class="card-body">
+        #if(abstimmung.meaningYes):
+        <p><strong>Ja:</strong> #(abstimmung.meaningYes) / <strong>Nein:</strong> #(abstimmung.meaningNo)</p>
+        #endif
+        <div class="row text-center">
+            <div class="col"><span class="badge bg-success fs-6">Ja: #count(abstimmung.stimmabgaben)</span></div>
+        </div>
+    </div>
+</div>
+#endfor
+#endif
+#endexport
+#endextend
