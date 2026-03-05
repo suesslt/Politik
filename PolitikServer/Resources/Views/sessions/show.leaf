@@ -1,0 +1,75 @@
+#extend("base"):
+#export("content"):
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/sessions">Sessions</a></li>
+        <li class="breadcrumb-item active">#(session.sessionName)</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>#(session.sessionName)</h1>
+    <form method="POST" action="/sessions/#(session.id)/sync">
+        <button type="submit" class="btn btn-primary">Synchronisieren</button>
+    </form>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <p><strong>Titel:</strong> #(session.title)</p>
+                <p><strong>Zeitraum:</strong> #date(session.startDate, "dd.MM.yyyy") &ndash; #date(session.endDate, "dd.MM.yyyy")</p>
+                <p><strong>Typ:</strong> #(session.typeName)</p>
+                <p><strong>Legislaturperiode:</strong> #(session.legislativePeriodNumber)</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <p><strong>Geschaefte:</strong> #count(geschaefte)</p>
+                <p><strong>Synced:</strong> #if(session.isSynced):Ja#else:Nein#endif</p>
+                #if(session.lastSyncDate):
+                <p><strong>Letzter Sync:</strong> #date(session.lastSyncDate, "dd.MM.yyyy HH:mm")</p>
+                #endif
+            </div>
+        </div>
+    </div>
+</div>
+
+<h2>Geschaefte (#count(geschaefte))</h2>
+<div class="table-responsive">
+    <table class="table table-hover table-sm">
+        <thead>
+            <tr>
+                <th>Nr.</th>
+                <th>Titel</th>
+                <th>Typ</th>
+                <th>Status</th>
+                <th>Eingereicht</th>
+                <th>Analyse</th>
+            </tr>
+        </thead>
+        <tbody>
+            #for(geschaeft in geschaefte):
+            <tr>
+                <td>
+                    <a href="/geschaefte/#(geschaeft.id)">#(geschaeft.businessShortNumber)</a>
+                </td>
+                <td>#(geschaeft.title)</td>
+                <td><span class="badge bg-info">#(geschaeft.businessTypeAbbreviation)</span></td>
+                <td>#(geschaeft.businessStatusText)</td>
+                <td>#(geschaeft.submittedBy)</td>
+                <td>
+                    #if(geschaeft.linksRechts):
+                    <span class="badge bg-success">Analysiert</span>
+                    #endif
+                </td>
+            </tr>
+            #endfor
+        </tbody>
+    </table>
+</div>
+#endexport
+#endextend

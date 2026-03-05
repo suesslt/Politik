@@ -1,0 +1,91 @@
+#extend("base"):
+#export("content"):
+<h1>Synchronisation</h1>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3>#(geschaefteCount)</h3>
+                <p class="text-muted">Geschaefte</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3>#(parlamentarierCount)</h3>
+                <p class="text-muted">Parlamentarier</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3>#(wortmeldungenCount)</h3>
+                <p class="text-muted">Wortmeldungen</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3>#(abstimmungenCount)</h3>
+                <p class="text-muted">Abstimmungen</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h2>Sessions synchronisieren</h2>
+
+#if(count(sessions) == 0):
+<div class="alert alert-info">
+    Keine Sessions vorhanden. Lade zuerst Sessions von parlament.ch.
+    <form method="POST" action="/sync/load-sessions" class="mt-2">
+        <button type="submit" class="btn btn-primary">Sessions laden</button>
+    </form>
+</div>
+#else:
+<form method="POST" action="/sync/sessions">
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" id="selectAll"></th>
+                    <th>Name</th>
+                    <th>Zeitraum</th>
+                    <th>Status</th>
+                    <th>Letzter Sync</th>
+                </tr>
+            </thead>
+            <tbody>
+                #for(session in sessions):
+                <tr>
+                    <td><input type="checkbox" name="sessionIds[]" value="#(session.id)"></td>
+                    <td>#(session.sessionName)</td>
+                    <td>#date(session.startDate, "dd.MM.yyyy") &ndash; #date(session.endDate, "dd.MM.yyyy")</td>
+                    <td>
+                        #if(session.isSynced):
+                        <span class="badge bg-success">Synced</span>
+                        #else:
+                        <span class="badge bg-warning">Ausstehend</span>
+                        #endif
+                    </td>
+                    <td>
+                        #if(session.lastSyncDate):
+                        #date(session.lastSyncDate, "dd.MM.yyyy HH:mm")
+                        #else:
+                        &ndash;
+                        #endif
+                    </td>
+                </tr>
+                #endfor
+            </tbody>
+        </table>
+    </div>
+    <button type="submit" class="btn btn-primary">Ausgewaehlte synchronisieren</button>
+</form>
+#endif
+#endexport
+#endextend

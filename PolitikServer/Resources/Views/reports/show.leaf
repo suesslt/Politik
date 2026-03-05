@@ -1,0 +1,22 @@
+#extend("base"):
+#export("content"):
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/reports">Berichte</a></li>
+        <li class="breadcrumb-item active">#(report.sessionName) - #date(report.reportDate, "dd.MM.yyyy")</li>
+    </ol>
+</nav>
+
+<h1>Bericht: #(report.sessionName)</h1>
+<p class="text-muted">
+    Datum: #date(report.reportDate, "dd.MM.yyyy") |
+    Erstellt: #date(report.createdAt, "dd.MM.yyyy HH:mm")
+</p>
+
+<div class="card">
+    <div class="card-body report-content">
+        #(report.content)
+    </div>
+</div>
+#endexport
+#endextend

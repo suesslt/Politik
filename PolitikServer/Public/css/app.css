@@ -1,0 +1,48 @@
+/* Politik Server - Custom Styles */
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.navbar-brand {
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+/* Progress bars for analysis scores */
+.progress {
+    height: 8px;
+    border-radius: 4px;
+}
+
+/* Report content - rendered Markdown */
+.report-content h1 { font-size: 1.8rem; margin-top: 1.5rem; }
+.report-content h2 { font-size: 1.4rem; margin-top: 1.2rem; border-bottom: 1px solid #dee2e6; padding-bottom: 0.3rem; }
+.report-content h3 { font-size: 1.2rem; margin-top: 1rem; }
+.report-content ul { padding-left: 1.5rem; }
+.report-content li { margin-bottom: 0.3rem; }
+
+/* Table improvements */
+.table th {
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    color: #6c757d;
+}
+
+/* Accordion improvements for Wortmeldungen */
+.accordion-button:not(.collapsed) {
+    background-color: #f8f9fa;
+    color: #212529;
+}
+
+/* Cards */
+.card {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border: 1px solid #e9ecef;
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}

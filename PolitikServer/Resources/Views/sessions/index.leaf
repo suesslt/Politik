@@ -1,0 +1,59 @@
+#extend("base"):
+#export("content"):
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Sessions</h1>
+    <form method="POST" action="/sync/load-sessions">
+        <button type="submit" class="btn btn-primary">Sessions laden</button>
+    </form>
+</div>
+
+#if(count(sessions) == 0):
+<div class="alert alert-info">
+    Keine Sessions vorhanden. Klicke &laquo;Sessions laden&raquo; um Sessions von parlament.ch zu importieren.
+</div>
+#else:
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Abk.</th>
+                <th>Beginn</th>
+                <th>Ende</th>
+                <th>Typ</th>
+                <th>LP</th>
+                <th>Synced</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            #for(session in sessions):
+            <tr>
+                <td>
+                    <a href="/sessions/#(session.id)">#(session.sessionName)</a>
+                </td>
+                <td>#(session.abbreviation)</td>
+                <td>#date(session.startDate, "dd.MM.yyyy")</td>
+                <td>#date(session.endDate, "dd.MM.yyyy")</td>
+                <td>#(session.typeName)</td>
+                <td>#(session.legislativePeriodNumber)</td>
+                <td>
+                    #if(session.isSynced):
+                    <span class="badge bg-success">Ja</span>
+                    #else:
+                    <span class="badge bg-secondary">Nein</span>
+                    #endif
+                </td>
+                <td>
+                    <form method="POST" action="/sessions/#(session.id)/sync" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-primary">Sync</button>
+                    </form>
+                </td>
+            </tr>
+            #endfor
+        </tbody>
+    </table>
+</div>
+#endif
+#endexport
+#endextend

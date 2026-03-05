@@ -1,0 +1,21 @@
+#extend("base"):
+#export("content"):
+<h1>Tagesberichte</h1>
+
+#if(count(reports) == 0):
+<div class="alert alert-info">Keine Berichte vorhanden.</div>
+#else:
+<div class="list-group">
+    #for(report in reports):
+    <a href="/reports/#(report.id)" class="list-group-item list-group-item-action">
+        <div class="d-flex w-100 justify-content-between">
+            <h5 class="mb-1">#(report.sessionName)</h5>
+            <small>#date(report.reportDate, "dd.MM.yyyy")</small>
+        </div>
+        <small class="text-muted">Erstellt: #date(report.createdAt, "dd.MM.yyyy HH:mm")</small>
+    </a>
+    #endfor
+</div>
+#endif
+#endexport
+#endextend
