@@ -14,6 +14,7 @@ final class Session {
     var typeName: String
     var legislativePeriodNumber: Int
     var isSynced: Bool = false
+    var lastSyncDate: Date?
 
     @Relationship(deleteRule: .cascade, inverse: \Geschaeft.session)
     var geschaefte: [Geschaeft] = []
