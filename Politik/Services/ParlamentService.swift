@@ -98,6 +98,23 @@ struct ParlamentService {
         return response.d
     }
 
+    // MARK: - Fetch Meetings for a Session (Tagesordnung)
+
+    func fetchMeetings(sessionID: Int) async throws -> [MeetingDTO] {
+        let urlString = "\(baseURL)/Meeting?$filter=Language%20eq%20'DE'%20and%20IdSession%20eq%20\(sessionID)&$format=json&$select=ID,MeetingNumber,IdSession,Council,CouncilName,CouncilAbbreviation,Date,Begin,MeetingOrderText,SortOrder,SessionName&$orderby=Date,SortOrder"
+        return try await fetchAllPages(from: urlString)
+    }
+
+    func fetchSubjectsForMeeting(meetingID: String) async throws -> [SubjectDTO] {
+        let urlString = "\(baseURL)/Meeting(ID=\(meetingID)L,Language='DE')/Subjects?$format=json&$select=ID,IdMeeting,SortOrder,VerbalixOid&$orderby=SortOrder"
+        return try await fetchAllPages(from: urlString)
+    }
+
+    func fetchSubjectBusinessesForSubject(subjectID: String) async throws -> [SubjectBusinessDTO] {
+        let urlString = "\(baseURL)/Subject(ID=\(subjectID)L,Language='DE')/SubjectsBusiness?$format=json&$select=IdSubject,BusinessNumber,BusinessShortNumber,Title,SortOrder"
+        return try await fetchAllPages(from: urlString)
+    }
+
     // MARK: - Fetch Votes for a Session
 
     func fetchVotes(sessionID: Int) async throws -> [VoteDTO] {
@@ -259,6 +276,30 @@ struct TranscriptDTO: Decodable, Sendable {
 struct SubjectBusinessDTO: Decodable, Sendable {
     let IdSubject: String?
     let BusinessNumber: Int?
+    let BusinessShortNumber: String?
+    let Title: String?
+    let SortOrder: Int?
+}
+
+struct MeetingDTO: Decodable, Sendable {
+    let ID: String?
+    let MeetingNumber: Int?
+    let IdSession: Int?
+    let Council: Int?
+    let CouncilName: String?
+    let CouncilAbbreviation: String?
+    let Date: String?
+    let Begin: String?
+    let MeetingOrderText: String?
+    let SortOrder: Int?
+    let SessionName: String?
+}
+
+struct SubjectDTO: Decodable, Sendable {
+    let ID: String?
+    let IdMeeting: String?
+    let SortOrder: Int?
+    let VerbalixOid: Int?
 }
 
 struct BusinessRoleDTO: Decodable, Sendable {

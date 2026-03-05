@@ -109,6 +109,7 @@ struct DailyReportListView: View {
         switch reportService.phase {
         case .idle: return ""
         case .syncing: return "Daten synchronisieren…"
+        case .fetchingAgenda: return "Tagesordnung laden…"
         case .generating: return "Bericht wird erstellt…"
         case .completed: return "Fertig"
         case .error(let msg): return msg

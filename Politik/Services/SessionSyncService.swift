@@ -82,6 +82,44 @@ final class SessionSyncService {
         isSyncing = false
     }
 
+    func syncGeschaefteDetails(_ geschaefte: [Geschaeft], modelContext: ModelContext) async {
+        isSyncing = true
+        stats = SyncStats()
+        errors = []
+
+        do {
+            var lookup = try await ensureParlamentarierLoaded(modelContext: modelContext)
+
+            let total = geschaefte.count
+            for (index, geschaeft) in geschaefte.enumerated() {
+                try Task.checkCancellation()
+                phase = .syncingGeschaeft(title: geschaeft.businessShortNumber, current: index + 1, total: total)
+
+                do {
+                    try await syncGeschaeft(geschaeft, forceReloadTranscripts: false, parlamentarierLookup: &lookup, modelContext: modelContext)
+                    stats.geschaefteProcessed += 1
+                } catch is CancellationError {
+                    throw CancellationError()
+                } catch {
+                    errors.append(SyncError(
+                        geschaeftID: geschaeft.id,
+                        geschaeftTitle: geschaeft.title,
+                        message: error.localizedDescription
+                    ))
+                    stats.errorsEncountered += 1
+                }
+            }
+            try modelContext.save()
+            phase = .completed
+        } catch is CancellationError {
+            phase = .cancelled
+        } catch {
+            phase = .completed
+        }
+
+        isSyncing = false
+    }
+
     func reset() {
         phase = .idle
         stats = SyncStats()
