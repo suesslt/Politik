@@ -1,12 +1,12 @@
 import SwiftUI
 import SwiftData
+import QuickLook
 
 struct DailyReportDetailView: View {
     @Bindable var report: DailyReport
     @Environment(\.modelContext) private var modelContext
     @State private var isEditing = false
     @State private var editText = ""
-    @State private var showShareSheet = false
     @State private var pdfURL: URL?
 
     private var dateFormatter: DateFormatter {
@@ -61,11 +61,7 @@ struct DailyReportDetailView: View {
                 }
             }
         }
-        .sheet(isPresented: $showShareSheet) {
-            if let url = pdfURL {
-                ShareSheet(activityItems: [url])
-            }
-        }
+        .quickLookPreview($pdfURL)
     }
 
     // MARK: - Reader View (Rendered Markdown)
@@ -200,7 +196,7 @@ struct DailyReportDetailView: View {
             }
         }
 
-        // Save to temp file
+        // Save to temp file and open in Quick Look
         let dateStr = dateFormatter.string(from: report.reportDate)
         let fileName = "Parlamentsbericht_\(dateStr).pdf"
             .replacingOccurrences(of: " ", with: "_")
@@ -210,21 +206,8 @@ struct DailyReportDetailView: View {
         do {
             try data.write(to: tempURL)
             pdfURL = tempURL
-            showShareSheet = true
         } catch {
             // PDF export failed silently
         }
     }
-}
-
-// MARK: - ShareSheet (UIKit wrapper)
-
-struct ShareSheet: UIViewControllerRepresentable {
-    let activityItems: [Any]
-
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
-    }
-
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }

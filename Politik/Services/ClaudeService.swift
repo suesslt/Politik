@@ -764,12 +764,13 @@ final class ClaudeService {
         - Kurze Zusammenfassung des Geschäfts
         - **Debatte:** Journalistische Zusammenfassung der Wortmeldungen. Pointierte Meinungen und \
         Widersprüche sollen hervorgehoben werden. Schreibe lebendig und anschaulich.
-        - **Abstimmung:** Resultat mit Fraktionsstimmverhalten
+        - **Abstimmung:** Resultat mit numerischem Ergebnis (Ja/Nein/Enthaltung) und Fraktionsstimmverhalten
 
         Wichtige Regeln:
         - Schreibe auf Deutsch (Schweizer Hochdeutsch)
         - Journalistischer, lebendiger Stil
         - Pointierte Meinungen und Kontroversen hervorheben
+        - Bei Abstimmungen immer das numerische Resultat angeben (z.B. «mit 118 zu 67 Stimmen bei 3 Enthaltungen angenommen»)
         - Bei Abstimmungen zeige das Stimmverhalten der Fraktionen
         - Nur Geschäfte aufnehmen, zu denen Wortmeldungen oder Abstimmungen vom angegebenen Tag vorliegen
         - Wenn keine Daten für einen Rat vorliegen, den Abschnitt weglassen
