@@ -198,9 +198,10 @@ struct DailyReportDetailView: View {
 
         // Save to temp file and open in Quick Look
         let dateStr = dateFormatter.string(from: report.reportDate)
-        let fileName = "Parlamentsbericht_\(dateStr).pdf"
+        let safeDateStr = dateStr
             .replacingOccurrences(of: " ", with: "_")
             .replacingOccurrences(of: ".", with: "")
+        let fileName = "Parlamentsbericht_\(safeDateStr).pdf"
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
 
         do {
