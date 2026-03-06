@@ -20,6 +20,7 @@ struct SyncController {
             let parlamentarierCount: Int
             let wortmeldungenCount: Int
             let abstimmungenCount: Int
+            let currentUser: UserContext?
         }
         return try await req.view.render("sync/index", Context(
             title: "Synchronisation",
@@ -27,7 +28,8 @@ struct SyncController {
             geschaefteCount: geschaefteCount,
             parlamentarierCount: parlamentarierCount,
             wortmeldungenCount: wortmeldungenCount,
-            abstimmungenCount: abstimmungenCount
+            abstimmungenCount: abstimmungenCount,
+            currentUser: req.userContext
         ))
     }
 

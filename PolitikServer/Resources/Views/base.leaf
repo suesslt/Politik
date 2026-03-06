@@ -16,6 +16,7 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
+                #if(currentUser):
                 <ul class="navbar-nav">
                     <li class="nav-item">
                         <a class="nav-link" href="/sessions">Sessions</a>
@@ -32,7 +33,27 @@
                     <li class="nav-item">
                         <a class="nav-link" href="/settings">Einstellungen</a>
                     </li>
+                    #if(currentUser.isAdmin):
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/users">Benutzer</a>
+                    </li>
+                    #endif
                 </ul>
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            #(currentUser.name)
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <form method="POST" action="/logout">
+                                    <button type="submit" class="dropdown-item">Abmelden</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+                #endif
             </div>
         </div>
     </nav>

@@ -9,12 +9,14 @@ struct SettingsController {
             let hasApiKey: Bool
             let dbHost: String
             let dbName: String
+            let currentUser: UserContext?
         }
         return try await req.view.render("settings/index", Context(
             title: "Einstellungen",
             hasApiKey: hasApiKey,
             dbHost: Environment.get("DB_HOST") ?? "localhost",
-            dbName: Environment.get("DB_NAME") ?? "politik"
+            dbName: Environment.get("DB_NAME") ?? "politik",
+            currentUser: req.userContext
         ))
     }
 }

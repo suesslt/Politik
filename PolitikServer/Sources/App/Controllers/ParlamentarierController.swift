@@ -53,6 +53,7 @@ struct ParlamentarierController {
             let sort: String
             let factions: [String]
             let cantons: [String]
+            let currentUser: UserContext?
         }
         return try await req.view.render("parlamentarier/index", Context(
             title: "Parlamentarier",
@@ -63,7 +64,8 @@ struct ParlamentarierController {
             council: council,
             sort: sort,
             factions: allFactions,
-            cantons: allCantons
+            cantons: allCantons,
+            currentUser: req.userContext
         ))
     }
 
@@ -95,6 +97,7 @@ struct ParlamentarierController {
             let interests: [PersonInterest]
             let recentVotes: [Stimmabgabe]
             let propositions: [Proposition]
+            let currentUser: UserContext?
         }
         return try await req.view.render("parlamentarier/show", Context(
             title: person.fullName,
@@ -102,7 +105,8 @@ struct ParlamentarierController {
             occupations: person.occupations,
             interests: person.interests,
             recentVotes: recentVotes,
-            propositions: person.propositions
+            propositions: person.propositions,
+            currentUser: req.userContext
         ))
     }
 

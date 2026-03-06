@@ -12,10 +12,12 @@ struct SessionController {
         struct Context: Encodable {
             let title: String
             let sessions: [Session]
+            let currentUser: UserContext?
         }
         return try await req.view.render("sessions/index", Context(
             title: "Sessions",
-            sessions: sessions
+            sessions: sessions,
+            currentUser: req.userContext
         ))
     }
 
@@ -41,11 +43,13 @@ struct SessionController {
             let title: String
             let session: Session
             let geschaefte: [Geschaeft]
+            let currentUser: UserContext?
         }
         return try await req.view.render("sessions/show", Context(
             title: session.sessionName,
             session: session,
-            geschaefte: geschaefte
+            geschaefte: geschaefte,
+            currentUser: req.userContext
         ))
     }
 

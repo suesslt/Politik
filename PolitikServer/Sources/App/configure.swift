@@ -17,6 +17,7 @@ func configure(_ app: Application) async throws {
 
     // MARK: - Migrations
     app.migrations.add(CreateInitialSchema())
+    app.migrations.add(CreateUsersTable())
 
     // MARK: - Leaf
     app.views.use(.leaf)
@@ -25,6 +26,7 @@ func configure(_ app: Application) async throws {
     app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
     app.middleware.use(ErrorMiddleware.default(environment: app.environment))
     app.middleware.use(app.sessions.middleware)
+    app.middleware.use(User.sessionAuthenticator())
 
     // MARK: - Services
     app.parlamentService = ParlamentService(client: app.client, logger: app.logger)

@@ -12,10 +12,12 @@ struct DailyReportController {
         struct Context: Encodable {
             let title: String
             let reports: [DailyReport]
+            let currentUser: UserContext?
         }
         return try await req.view.render("reports/index", Context(
             title: "Tagesberichte",
-            reports: reports
+            reports: reports,
+            currentUser: req.userContext
         ))
     }
 
@@ -31,10 +33,12 @@ struct DailyReportController {
         struct Context: Encodable {
             let title: String
             let report: DailyReport
+            let currentUser: UserContext?
         }
         return try await req.view.render("reports/show", Context(
             title: "Bericht \(report.sessionName)",
-            report: report
+            report: report,
+            currentUser: req.userContext
         ))
     }
 

@@ -37,6 +37,7 @@ struct GeschaeftController {
             let abstimmungen: [Abstimmung]
             let session: Session?
             let urheber: Parlamentarier?
+            let currentUser: UserContext?
         }
         return try await req.view.render("geschaefte/show", Context(
             title: geschaeft.businessShortNumber,
@@ -44,7 +45,8 @@ struct GeschaeftController {
             wortmeldungen: wortmeldungen,
             abstimmungen: geschaeft.abstimmungen,
             session: geschaeft.session,
-            urheber: geschaeft.urheber
+            urheber: geschaeft.urheber,
+            currentUser: req.userContext
         ))
     }
 
