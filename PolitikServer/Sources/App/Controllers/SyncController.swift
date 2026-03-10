@@ -13,6 +13,12 @@ struct SyncController {
         let wortmeldungenCount = try await Wortmeldung.query(on: req.db).count()
         let abstimmungenCount = try await Abstimmung.query(on: req.db).count()
 
+        // Read and consume flash message
+        let flash = req.session.data["flash"]
+        let flashType = req.session.data["flashType"] ?? "success"
+        req.session.data["flash"] = nil
+        req.session.data["flashType"] = nil
+
         struct Context: Encodable {
             let title: String
             let sessions: [Session]
@@ -21,6 +27,8 @@ struct SyncController {
             let wortmeldungenCount: Int
             let abstimmungenCount: Int
             let currentUser: UserContext?
+            let flash: String?
+            let flashType: String?
         }
         return try await req.view.render("sync/index", Context(
             title: "Synchronisation",
@@ -29,7 +37,9 @@ struct SyncController {
             parlamentarierCount: parlamentarierCount,
             wortmeldungenCount: wortmeldungenCount,
             abstimmungenCount: abstimmungenCount,
-            currentUser: req.userContext
+            currentUser: req.userContext,
+            flash: flash,
+            flashType: flashType
         ))
     }
 
@@ -38,7 +48,18 @@ struct SyncController {
             let sessionIds: [Int]
         }
 
-        let input = try req.content.decode(SyncRequest.self)
+        // Decode form data
+        let input: SyncRequest
+        do {
+            input = try req.content.decode(SyncRequest.self)
+        } catch {
+            req.logger.error("Failed to decode sync request: \(error)")
+            req.session.data["flash"] = "Fehler: Keine Sessions ausgewählt."
+            req.session.data["flashType"] = "error"
+            return req.redirect(to: "/sync")
+        }
+
+        req.logger.info("Sync requested for session IDs: \(input.sessionIds)")
 
         var sessions: [Session] = []
         for id in input.sessionIds {
@@ -48,22 +69,46 @@ struct SyncController {
         }
 
         guard !sessions.isEmpty else {
-            throw Abort(.badRequest, reason: "Keine gültigen Sessions ausgewählt")
+            req.session.data["flash"] = "Keine gültigen Sessions ausgewählt."
+            req.session.data["flashType"] = "error"
+            return req.redirect(to: "/sync")
         }
 
         let syncService = SessionSyncService(
             parlamentService: req.parlamentService,
             logger: req.logger
         )
-        let result = try await syncService.syncSessions(sessions, on: req.db)
 
-        // Store result in session for flash message
-        req.session.data["flash"] = """
-        Sync abgeschlossen: \(result.sessionsProcessed) Sessions, \
-        \(result.geschaefteProcessed) Geschäfte, \
-        \(result.wortmeldungenCreated) Wortmeldungen, \
-        \(result.abstimmungenCreated) Abstimmungen
-        """
+        do {
+            let result = try await syncService.syncSessions(sessions, on: req.db)
+
+            var message = "Sync abgeschlossen: \(result.sessionsProcessed) Sessions, " +
+                "\(result.geschaefteProcessed) Geschäfte, " +
+                "\(result.wortmeldungenCreated) Wortmeldungen, " +
+                "\(result.abstimmungenCreated) Abstimmungen, " +
+                "\(result.stimmabgabenCreated) Stimmabgaben"
+
+            if result.errorsEncountered > 0 {
+                message += " — \(result.errorsEncountered) Fehler: "
+                message += result.errors.prefix(5).joined(separator: "; ")
+                if result.errors.count > 5 {
+                    message += " (und \(result.errors.count - 5) weitere)"
+                }
+            }
+
+            req.logger.info("Sync result: \(message)")
+            if !result.errors.isEmpty {
+                req.logger.warning("Sync errors: \(result.errors)")
+            }
+
+            req.session.data["flash"] = message
+            req.session.data["flashType"] = result.errorsEncountered > 0 ? "warning" : "success"
+        } catch {
+            let errorDetail = String(reflecting: error)
+            req.logger.error("Sync failed with exception: \(errorDetail)")
+            req.session.data["flash"] = "Sync fehlgeschlagen: \(errorDetail)"
+            req.session.data["flashType"] = "error"
+        }
 
         return req.redirect(to: "/sync")
     }

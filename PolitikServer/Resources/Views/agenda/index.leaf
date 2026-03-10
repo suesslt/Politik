@@ -1,0 +1,57 @@
+#extend("base"):
+#export("content"):
+<h1 class="text-title-lg mb-6">Sitzungsagenden</h1>
+
+<!-- Session selector -->
+<div class="card-apple mb-6">
+    <div class="px-4 py-4">
+        <form method="GET" action="/agenda" class="flex items-end gap-3">
+            <div class="flex-1">
+                <label class="block text-caption font-medium text-[var(--text-secondary)] mb-1.5">Session</label>
+                <select name="sessionId" required class="w-full px-3 py-2.5 rounded-lg bg-[var(--bg-tertiary)] border border-transparent text-body text-[var(--text-primary)] focus:outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/20 transition-all">
+                    <option value="">Session wählen...</option>
+                    #for(session in sessions):
+                    <option value="#(session.id)" #if(selectedSessionId == session.id):selected#endif>#(session.sessionName)</option>
+                    #endfor
+                </select>
+            </div>
+            <button type="submit" class="px-5 py-2.5 rounded-lg bg-apple-blue text-white font-semibold text-body hover:bg-apple-blue/90 transition-colors shadow-sm">Sitzungstage laden</button>
+        </form>
+    </div>
+</div>
+
+#if(selectedSessionId):
+    #if(count(meetingDays) == 0):
+    <div class="card-apple">
+        <div class="flex items-center gap-3 px-5 py-8 justify-center">
+            <svg class="w-6 h-6 text-apple-blue" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
+            <span class="text-body text-[var(--text-secondary)]">Keine Sitzungstage für diese Session gefunden.</span>
+        </div>
+    </div>
+    #else:
+    <h2 class="text-title mb-4">#(selectedSessionName)</h2>
+    <div class="space-y-3">
+        #for(day in meetingDays):
+        <a href="/agenda/day?sessionId=#(selectedSessionId)&date=#(day.dateKey)" class="card-apple block hover:shadow-md transition-shadow group">
+            <div class="flex items-center justify-between px-5 py-4">
+                <div>
+                    <div class="text-body font-semibold text-[var(--text-primary)] group-hover:text-apple-blue transition-colors">#(day.displayDate)</div>
+                    <div class="flex items-center gap-2 mt-1.5">
+                        #for(meeting in day.meetings):
+                        <span class="inline-flex px-2 py-0.5 rounded-full text-caption2 font-semibold bg-apple-purple/10 text-apple-purple">#(meeting.councilAbbreviation)</span>
+                        <span class="text-caption text-[var(--text-secondary)] mr-2">#(meeting.meetingOrderText)</span>
+                        #endfor
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 shrink-0">
+                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-apple-blue/10 text-apple-blue text-caption font-bold">#count(day.meetings)</span>
+                    <svg class="w-4 h-4 text-[var(--text-tertiary)]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+                </div>
+            </div>
+        </a>
+        #endfor
+    </div>
+    #endif
+#endif
+#endexport
+#endextend

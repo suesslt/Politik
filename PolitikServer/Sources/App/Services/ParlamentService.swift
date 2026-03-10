@@ -116,14 +116,13 @@ struct ParlamentService: Sendable {
     // MARK: - Fetch Votes
 
     func fetchVotes(sessionID: Int) async throws -> [VoteDTO] {
-        let urlString = "\(baseURL)/Vote?$filter=Language%20eq%20'DE'%20and%20IdSession%20eq%20\(sessionID)&$format=json&$select=ID,BusinessNumber,BusinessShortNumber,BillTitle,IdSession,Subject,MeaningYes,MeaningNo,VoteEnd,Modified"
+        let urlString = "\(baseURL)/Vote?$filter=Language%20eq%20'DE'%20and%20IdSession%20eq%20\(sessionID)&$format=json&$select=ID,BusinessNumber,BusinessShortNumber,BillTitle,IdSession,Subject,MeaningYes,MeaningNo,VoteEnd"
         return try await fetchAllPages(from: urlString)
     }
 
     func fetchVotesModifiedSince(sessionID: Int, since: Date) async throws -> [VoteDTO] {
-        let dateString = ODataDateFormatter.format(since)
-        let urlString = "\(baseURL)/Vote?$filter=Language%20eq%20'DE'%20and%20IdSession%20eq%20\(sessionID)%20and%20Modified%20gt%20datetime'\(dateString)'&$format=json&$select=ID,BusinessNumber,BusinessShortNumber,BillTitle,IdSession,Subject,MeaningYes,MeaningNo,VoteEnd,Modified"
-        return try await fetchAllPages(from: urlString)
+        // Vote entity does not have a Modified field, fetch all votes for the session
+        return try await fetchVotes(sessionID: sessionID)
     }
 
     func fetchVotings(voteID: Int) async throws -> [VotingDTO] {

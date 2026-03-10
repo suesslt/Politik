@@ -9,14 +9,20 @@ struct DailyReportController {
             .sort(\.$reportDate, .descending)
             .all()
 
+        let sessions = try await Session.query(on: req.db)
+            .sort(\.$startDate, .descending)
+            .all()
+
         struct Context: Encodable {
             let title: String
             let reports: [DailyReport]
+            let sessions: [Session]
             let currentUser: UserContext?
         }
         return try await req.view.render("reports/index", Context(
             title: "Tagesberichte",
             reports: reports,
+            sessions: sessions,
             currentUser: req.userContext
         ))
     }

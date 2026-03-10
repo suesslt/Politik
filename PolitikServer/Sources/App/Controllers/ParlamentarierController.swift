@@ -79,7 +79,6 @@ struct ParlamentarierController {
 
         try await person.$occupations.load(on: req.db)
         try await person.$interests.load(on: req.db)
-        try await person.$wortmeldungen.load(on: req.db)
         try await person.$propositions.load(on: req.db)
 
         // Load recent votes
@@ -90,6 +89,39 @@ struct ParlamentarierController {
             .limit(30)
             .all()
 
+        // Load wortmeldungen with geschaeft
+        let wortmeldungen = try await Wortmeldung.query(on: req.db)
+            .filter(\.$parlamentarier.$id == pn)
+            .filter(\.$type == 1)
+            .with(\.$geschaeft)
+            .sort(\.$meetingDate, .descending)
+            .sort(\.$sortOrder)
+            .all()
+
+        struct WortmeldungView: Encodable {
+            let id: String
+            let speakerFullName: String
+            let speakerFunction: String?
+            let plainText: String
+            let meetingDate: String?
+            let geschaeftId: Int?
+            let geschaeftTitle: String?
+            let businessShortNumber: String?
+        }
+
+        let wortmeldungViews = wortmeldungen.map { wm in
+            WortmeldungView(
+                id: wm.id ?? "",
+                speakerFullName: wm.speakerFullName,
+                speakerFunction: wm.speakerFunction,
+                plainText: String(wm.plainText.prefix(300)),
+                meetingDate: wm.meetingDate,
+                geschaeftId: wm.$geschaeft.id,
+                geschaeftTitle: wm.geschaeft?.title,
+                businessShortNumber: wm.geschaeft?.businessShortNumber
+            )
+        }
+
         struct Context: Encodable {
             let title: String
             let person: Parlamentarier
@@ -97,6 +129,11 @@ struct ParlamentarierController {
             let interests: [PersonInterest]
             let recentVotes: [Stimmabgabe]
             let propositions: [Proposition]
+            let wortmeldungen: [WortmeldungView]
+            let linksRechtsPercent: Int
+            let konservativLiberalPercent: Int
+            let liberaleWirtschaftPercent: Int
+            let innovativerStandortPercent: Int
             let currentUser: UserContext?
         }
         return try await req.view.render("parlamentarier/show", Context(
@@ -106,6 +143,11 @@ struct ParlamentarierController {
             interests: person.interests,
             recentVotes: recentVotes,
             propositions: person.propositions,
+            wortmeldungen: wortmeldungViews,
+            linksRechtsPercent: Int(((person.linksRechts ?? 0) + 1) / 2 * 100),
+            konservativLiberalPercent: Int(((person.konservativLiberal ?? 0) + 1) / 2 * 100),
+            liberaleWirtschaftPercent: Int((person.liberaleWirtschaft ?? 0) * 100),
+            innovativerStandortPercent: Int((person.innovativerStandort ?? 0) * 100),
             currentUser: req.userContext
         ))
     }

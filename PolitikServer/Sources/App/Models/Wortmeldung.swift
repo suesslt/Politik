@@ -55,16 +55,25 @@ final class Wortmeldung: Model, Content, @unchecked Sendable {
 
     var plainText: String {
         var result = text
-        // Strip HTML tags
+        // Convert block-level tags to spaces before stripping
+        result = result.replacingOccurrences(of: "<br\\s*/?>", with: " ", options: .regularExpression)
+        result = result.replacingOccurrences(of: "</p>", with: " ")
+        result = result.replacingOccurrences(of: "</div>", with: " ")
+        result = result.replacingOccurrences(of: "</li>", with: " ")
+        // Strip remaining HTML tags
         while let range = result.range(of: "<[^>]+>", options: .regularExpression) {
             result.removeSubrange(range)
         }
-        // Clean up whitespace
+        // Decode HTML entities
         result = result.replacingOccurrences(of: "&nbsp;", with: " ")
         result = result.replacingOccurrences(of: "&amp;", with: "&")
         result = result.replacingOccurrences(of: "&lt;", with: "<")
         result = result.replacingOccurrences(of: "&gt;", with: ">")
         result = result.replacingOccurrences(of: "&quot;", with: "\"")
+        result = result.replacingOccurrences(of: "&#39;", with: "'")
+        result = result.replacingOccurrences(of: "&apos;", with: "'")
+        // Collapse multiple whitespace into single space
+        result = result.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
         return result.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 

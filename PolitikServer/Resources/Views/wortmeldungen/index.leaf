@@ -1,0 +1,115 @@
+#extend("base"):
+#export("content"):
+<div class="flex items-center justify-between mb-5">
+    <h1 class="text-title-lg">Wortmeldungen <span class="text-headline font-normal text-[var(--text-secondary)]">(#(totalCount))</span></h1>
+</div>
+
+<!-- Toolbar -->
+<div class="card-apple mb-5">
+    <div class="px-4 py-3">
+        <form method="GET" action="/wortmeldungen" class="flex flex-wrap items-center gap-2">
+            <div class="relative flex-1 min-w-[200px]">
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+                <input type="text" name="q" placeholder="Texte &amp; Sprecher suchen..." value="#(query)"
+                    class="w-full pl-9 pr-3 py-2 rounded-lg bg-[var(--bg-tertiary)] border border-transparent text-body text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/20 transition-all">
+            </div>
+            <select name="faction" class="px-3 py-2 rounded-lg bg-[var(--bg-tertiary)] border border-transparent text-caption text-[var(--text-primary)] focus:outline-none focus:border-apple-blue transition-all">
+                <option value="">Fraktion</option>
+                #for(f in factions):
+                <option value="#(f)" #if(faction == f):selected#endif>#(f)</option>
+                #endfor
+            </select>
+            <select name="canton" class="px-3 py-2 rounded-lg bg-[var(--bg-tertiary)] border border-transparent text-caption text-[var(--text-primary)] focus:outline-none focus:border-apple-blue transition-all">
+                <option value="">Kanton</option>
+                #for(c in cantons):
+                <option value="#(c)" #if(canton == c):selected#endif>#(c)</option>
+                #endfor
+            </select>
+            <select name="council" class="px-3 py-2 rounded-lg bg-[var(--bg-tertiary)] border border-transparent text-caption text-[var(--text-primary)] focus:outline-none focus:border-apple-blue transition-all">
+                <option value="">Rat</option>
+                <option value="Nationalrat" #if(council == "Nationalrat"):selected#endif>NR</option>
+                <option value="Ständerat" #if(council == "Ständerat"):selected#endif>SR</option>
+            </select>
+            <button type="submit" class="px-4 py-2 rounded-lg bg-apple-blue text-white font-semibold text-caption hover:bg-apple-blue/90 transition-colors shadow-sm">Suchen</button>
+        </form>
+    </div>
+</div>
+
+#if(count(wortmeldungen) == 0):
+<div class="card-apple">
+    <div class="flex flex-col items-center gap-3 px-5 py-12">
+        <div class="w-12 h-12 rounded-2xl bg-apple-green/10 flex items-center justify-center">
+            <svg class="w-6 h-6 text-apple-green" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"/></svg>
+        </div>
+        <span class="text-body text-[var(--text-secondary)]">Keine Wortmeldungen gefunden.</span>
+    </div>
+</div>
+#else:
+<div class="card-apple mb-6">
+    <div class="divide-y divide-[var(--separator)]">
+        #for(wm in wortmeldungen):
+        <div class="flex items-start gap-4 px-4 py-3.5 hover:bg-[var(--fill-tertiary)] transition-colors">
+            <!-- Avatar -->
+            <div class="w-9 h-9 rounded-full bg-apple-green/15 flex items-center justify-center shrink-0 mt-0.5">
+                <svg class="w-4 h-4 text-apple-green" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z"/></svg>
+            </div>
+            <!-- Content -->
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between mb-1">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-body font-semibold">#(wm.speakerFullName)</span>
+                        #if(wm.parlGroupAbbreviation):
+                        <span class="inline-flex px-1.5 py-0.5 rounded text-caption2 font-semibold bg-apple-purple/10 text-apple-purple">#(wm.parlGroupAbbreviation)</span>
+                        #endif
+                        #if(wm.cantonAbbreviation):
+                        <span class="text-caption2 text-[var(--text-tertiary)]">#(wm.cantonAbbreviation)</span>
+                        #endif
+                        #if(wm.speakerFunction):
+                        <span class="text-caption text-[var(--text-tertiary)]">&middot; #(wm.speakerFunction)</span>
+                        #endif
+                    </div>
+                    #if(wm.meetingDate):
+                    <span class="text-caption2 font-mono text-[var(--text-tertiary)] whitespace-nowrap ml-3">#(wm.meetingDate)</span>
+                    #endif
+                </div>
+                #if(wm.geschaeftId):
+                <a href="/geschaefte/#(wm.geschaeftId)" class="inline-flex items-center gap-1 text-caption text-apple-blue hover:underline mb-1">
+                    <span class="font-semibold">#(wm.businessShortNumber)</span> #(wm.geschaeftTitle)
+                </a>
+                #endif
+                <p class="text-caption text-[var(--text-secondary)] leading-relaxed line-clamp-2">#(wm.plainText)...</p>
+            </div>
+        </div>
+        #endfor
+    </div>
+</div>
+
+<!-- Pagination -->
+#if(totalPages > 1):
+<div class="card-apple">
+    <div class="flex items-center justify-between px-4 py-3">
+        <div>
+            #if(page > 1):
+            <a href="/wortmeldungen?page=#(page - 1)#if(query):&q=#(query)#endif#if(faction):&faction=#(faction)#endif#if(canton):&canton=#(canton)#endif#if(council):&council=#(council)#endif"
+                class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-caption font-medium text-apple-blue hover:bg-apple-blue/10 transition-colors">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
+                Zurück
+            </a>
+            #endif
+        </div>
+        <span class="text-caption text-[var(--text-secondary)]">Seite #(page) von #(totalPages)</span>
+        <div>
+            #if(page < totalPages):
+            <a href="/wortmeldungen?page=#(page + 1)#if(query):&q=#(query)#endif#if(faction):&faction=#(faction)#endif#if(canton):&canton=#(canton)#endif#if(council):&council=#(council)#endif"
+                class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-caption font-medium text-apple-blue hover:bg-apple-blue/10 transition-colors">
+                Weiter
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+            </a>
+            #endif
+        </div>
+    </div>
+</div>
+#endif
+#endif
+#endexport
+#endextend

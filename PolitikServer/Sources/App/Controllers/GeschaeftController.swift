@@ -37,6 +37,11 @@ struct GeschaeftController {
             let abstimmungen: [Abstimmung]
             let session: Session?
             let urheber: Parlamentarier?
+            let linksRechtsPercent: Int
+            let konservativLiberalPercent: Int
+            let liberaleWirtschaftPercent: Int
+            let innovativerStandortPercent: Int
+            let stromversorgungPercent: Int
             let currentUser: UserContext?
         }
         return try await req.view.render("geschaefte/show", Context(
@@ -46,6 +51,11 @@ struct GeschaeftController {
             abstimmungen: geschaeft.abstimmungen,
             session: geschaeft.session,
             urheber: geschaeft.urheber,
+            linksRechtsPercent: Int(((geschaeft.linksRechts ?? 0) + 1) / 2 * 100),
+            konservativLiberalPercent: Int(((geschaeft.konservativLiberal ?? 0) + 1) / 2 * 100),
+            liberaleWirtschaftPercent: Int((geschaeft.liberaleWirtschaft ?? 0) * 100),
+            innovativerStandortPercent: Int((geschaeft.innovativerStandort ?? 0) * 100),
+            stromversorgungPercent: Int((geschaeft.unabhaengigeStromversorgung ?? 0) * 100),
             currentUser: req.userContext
         ))
     }

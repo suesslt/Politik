@@ -1,43 +1,85 @@
 #extend("base"):
 #export("content"):
-<h1>Einstellungen</h1>
+<h1 class="text-title-lg mb-6">Einstellungen</h1>
 
-<div class="card mb-4">
-    <div class="card-header">Datenbank</div>
-    <div class="card-body">
-        <p><strong>Host:</strong> #(dbHost)</p>
-        <p><strong>Datenbank:</strong> #(dbName)</p>
+<div class="max-w-2xl space-y-4">
+    <!-- Database -->
+    <div class="card-apple">
+        <div class="card-apple-header">Datenbank</div>
+        <div class="divide-y divide-[var(--separator)]">
+            <div class="flex items-center justify-between px-4 py-3">
+                <span class="text-body">Host</span>
+                <span class="text-body text-[var(--text-secondary)] font-mono text-caption">#(dbHost)</span>
+            </div>
+            <div class="flex items-center justify-between px-4 py-3">
+                <span class="text-body">Datenbank</span>
+                <span class="text-body text-[var(--text-secondary)] font-mono text-caption">#(dbName)</span>
+            </div>
+        </div>
     </div>
-</div>
 
-<div class="card mb-4">
-    <div class="card-header">Claude API</div>
-    <div class="card-body">
-        #if(hasApiKey):
-        <p><span class="badge bg-success">API-Key konfiguriert</span></p>
-        <p class="text-muted">Setze die Umgebungsvariable <code>CLAUDE_API_KEY</code> zum Aendern.</p>
-        #else:
-        <p><span class="badge bg-danger">Kein API-Key</span></p>
-        <p>Setze die Umgebungsvariable <code>CLAUDE_API_KEY</code> mit deinem Anthropic API-Key.</p>
-        <pre><code>export CLAUDE_API_KEY=sk-ant-...</code></pre>
-        #endif
+    <!-- Claude API -->
+    <div class="card-apple">
+        <div class="card-apple-header">Claude API</div>
+        <div class="px-4 py-4">
+            #if(hasApiKey):
+            <div class="flex items-center gap-2 mb-2">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-caption2 font-semibold bg-apple-green/10 text-apple-green">
+                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd"/></svg>
+                    Konfiguriert
+                </span>
+            </div>
+            <p class="text-caption text-[var(--text-secondary)]">Umgebungsvariable <code class="px-1 py-0.5 rounded bg-[var(--fill-tertiary)] text-caption2">CLAUDE_API_KEY</code> ist gesetzt.</p>
+            #else:
+            <div class="flex items-center gap-2 mb-2">
+                <span class="inline-flex px-2 py-0.5 rounded-full text-caption2 font-semibold bg-apple-red/10 text-apple-red">Nicht konfiguriert</span>
+            </div>
+            <p class="text-caption text-[var(--text-secondary)] mb-2">Setze die Umgebungsvariable:</p>
+            <code class="block px-3 py-2 rounded-lg bg-[var(--bg-tertiary)] text-caption font-mono">export CLAUDE_API_KEY=sk-ant-...</code>
+            #endif
+        </div>
     </div>
-</div>
 
-<div class="card">
-    <div class="card-header">Umgebungsvariablen</div>
-    <div class="card-body">
-        <table class="table table-sm">
-            <thead><tr><th>Variable</th><th>Beschreibung</th><th>Standard</th></tr></thead>
-            <tbody>
-                <tr><td><code>DB_HOST</code></td><td>PostgreSQL Host</td><td>localhost</td></tr>
-                <tr><td><code>DB_PORT</code></td><td>PostgreSQL Port</td><td>5432</td></tr>
-                <tr><td><code>DB_USER</code></td><td>Datenbankbenutzer</td><td>politik</td></tr>
-                <tr><td><code>DB_PASSWORD</code></td><td>Datenbankpasswort</td><td>politik</td></tr>
-                <tr><td><code>DB_NAME</code></td><td>Datenbankname</td><td>politik</td></tr>
-                <tr><td><code>CLAUDE_API_KEY</code></td><td>Anthropic API-Key</td><td>&ndash;</td></tr>
-            </tbody>
-        </table>
+    <!-- Environment Variables -->
+    <div class="card-apple">
+        <div class="card-apple-header">Umgebungsvariablen</div>
+        <div class="divide-y divide-[var(--separator)]">
+            <div class="grid grid-cols-3 gap-4 px-4 py-2.5 text-caption2 font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                <div>Variable</div>
+                <div>Beschreibung</div>
+                <div>Standard</div>
+            </div>
+            <div class="grid grid-cols-3 gap-4 px-4 py-2.5 text-caption">
+                <div class="font-mono text-apple-blue">DB_HOST</div>
+                <div class="text-[var(--text-secondary)]">PostgreSQL Host</div>
+                <div class="text-[var(--text-secondary)]">localhost</div>
+            </div>
+            <div class="grid grid-cols-3 gap-4 px-4 py-2.5 text-caption">
+                <div class="font-mono text-apple-blue">DB_PORT</div>
+                <div class="text-[var(--text-secondary)]">PostgreSQL Port</div>
+                <div class="text-[var(--text-secondary)]">5432</div>
+            </div>
+            <div class="grid grid-cols-3 gap-4 px-4 py-2.5 text-caption">
+                <div class="font-mono text-apple-blue">DB_USER</div>
+                <div class="text-[var(--text-secondary)]">Datenbankbenutzer</div>
+                <div class="text-[var(--text-secondary)]">politik</div>
+            </div>
+            <div class="grid grid-cols-3 gap-4 px-4 py-2.5 text-caption">
+                <div class="font-mono text-apple-blue">DB_PASSWORD</div>
+                <div class="text-[var(--text-secondary)]">Datenbankpasswort</div>
+                <div class="text-[var(--text-secondary)]">politik</div>
+            </div>
+            <div class="grid grid-cols-3 gap-4 px-4 py-2.5 text-caption">
+                <div class="font-mono text-apple-blue">DB_NAME</div>
+                <div class="text-[var(--text-secondary)]">Datenbankname</div>
+                <div class="text-[var(--text-secondary)]">politik</div>
+            </div>
+            <div class="grid grid-cols-3 gap-4 px-4 py-2.5 text-caption">
+                <div class="font-mono text-apple-blue">CLAUDE_API_KEY</div>
+                <div class="text-[var(--text-secondary)]">Anthropic API-Key</div>
+                <div class="text-[var(--text-secondary)]">&ndash;</div>
+            </div>
+        </div>
     </div>
 </div>
 #endexport

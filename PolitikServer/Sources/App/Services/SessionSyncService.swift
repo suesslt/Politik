@@ -51,8 +51,10 @@ final class SessionSyncService: Sendable {
                 try await session.save(on: db)
                 result.sessionsProcessed += 1
             } catch {
+                let errorDetail = String(reflecting: error)
+                logger.error("Session sync failed for '\(session.sessionName)': \(errorDetail)")
                 result.errorsEncountered += 1
-                result.errors.append("Session \(session.sessionName): \(error.localizedDescription)")
+                result.errors.append("Session \(session.sessionName): \(errorDetail)")
             }
         }
 
@@ -105,7 +107,73 @@ final class SessionSyncService: Sendable {
             try await person.save(on: db)
             lookup[personNumber] = person
         }
+
+        // Enrich Parlamentarier without details (occupations, interests, detail fields)
+        let needsDetail = lookup.values.filter { !$0.isDetailLoaded }
+        logger.info("Parlamentarier needing detail enrichment: \(needsDetail.count)")
+
+        for person in needsDetail {
+            guard let pn = person.id else { continue }
+            do {
+                try await enrichParlamentarier(person, personNumber: pn, on: db)
+            } catch {
+                logger.warning("Failed to enrich Parlamentarier \(pn): \(error)")
+            }
+        }
+
         return lookup
+    }
+
+    private func enrichParlamentarier(_ person: Parlamentarier, personNumber: Int, on db: Database) async throws {
+        // Load detail fields
+        if let detail = try await parlamentService.fetchParlamentarierDetail(personNumber: personNumber) {
+            person.partyName = detail.PartyName
+            person.parlGroupName = detail.ParlGroupName
+            person.cantonName = detail.CantonName
+            person.nationality = detail.Nationality
+            person.dateOfBirth = ODataDateParser.parse(detail.DateOfBirth)
+            person.birthPlaceCity = detail.BirthPlace_City
+            person.birthPlaceCanton = detail.BirthPlace_Canton
+            person.citizenship = detail.Citizenship
+            person.maritalStatusText = detail.MaritalStatusText
+            person.numberOfChildren = detail.NumberOfChildren
+            person.dateJoining = ODataDateParser.parse(detail.DateJoining)
+            person.dateLeaving = ODataDateParser.parse(detail.DateLeaving)
+            person.dateElection = ODataDateParser.parse(detail.DateElection)
+            person.militaryRankText = detail.MilitaryRankText
+        }
+
+        // Load occupations
+        let occupationDTOs = try await parlamentService.fetchPersonOccupations(personNumber: personNumber)
+        for dto in occupationDTOs {
+            let occ = PersonOccupation(
+                personNumber: personNumber,
+                occupationName: dto.OccupationName ?? "",
+                employer: dto.Employer,
+                jobTitle: dto.JobTitle
+            )
+            occ.$parlamentarier.id = personNumber
+            try await occ.save(on: db)
+        }
+
+        // Load interests
+        let interestDTOs = try await parlamentService.fetchPersonInterests(personNumber: personNumber)
+        for dto in interestDTOs {
+            let interest = PersonInterest(
+                personNumber: personNumber,
+                interestName: dto.InterestName ?? "",
+                interestTypeText: dto.InterestTypeText,
+                functionInAgencyText: dto.FunctionInAgencyText,
+                paid: dto.Paid,
+                organizationTypeText: dto.OrganizationTypeText
+            )
+            interest.$parlamentarier.id = personNumber
+            try await interest.save(on: db)
+        }
+
+        person.isDetailLoaded = true
+        try await person.save(on: db)
+        logger.info("Enriched: \(person.fullName) (\(occupationDTOs.count) occupations, \(interestDTOs.count) interests)")
     }
 
     // MARK: - Private: Session Sync
@@ -133,6 +201,7 @@ final class SessionSyncService: Sendable {
 
         for dto in geschaefteDTOs {
             if let existing = existingLookup[dto.ID] {
+                // Already in this session – update fields
                 existing.title = dto.Title ?? existing.title
                 existing.businessStatusText = dto.BusinessStatusText ?? existing.businessStatusText
                 existing.businessStatusDate = ODataDateParser.parse(dto.BusinessStatusDate) ?? existing.businessStatusDate
@@ -141,7 +210,19 @@ final class SessionSyncService: Sendable {
                 try await existing.save(on: db)
                 modifiedGeschaeftIDs.insert(dto.ID)
                 result.geschaefteUpdated += 1
+            } else if let existingInDB = try await Geschaeft.find(dto.ID, on: db) {
+                // Exists in DB from another session – update and re-assign
+                existingInDB.title = dto.Title ?? existingInDB.title
+                existingInDB.businessStatusText = dto.BusinessStatusText ?? existingInDB.businessStatusText
+                existingInDB.businessStatusDate = ODataDateParser.parse(dto.BusinessStatusDate) ?? existingInDB.businessStatusDate
+                existingInDB.descriptionText = dto.Description ?? existingInDB.descriptionText
+                existingInDB.tagNames = dto.TagNames ?? existingInDB.tagNames
+                existingInDB.$session.id = session.id
+                try await existingInDB.save(on: db)
+                modifiedGeschaeftIDs.insert(dto.ID)
+                result.geschaefteUpdated += 1
             } else {
+                // New – insert
                 let geschaeft = Geschaeft(
                     id: dto.ID,
                     businessShortNumber: dto.BusinessShortNumber ?? "",
@@ -297,28 +378,34 @@ final class SessionSyncService: Sendable {
 
     private func syncAbstimmungen(for session: Session, lastSync: Date?, parlamentarierLookup: [Int: Parlamentarier], on db: Database) async throws -> SyncResult {
         var result = SyncResult()
+        guard let sessionId = session.id else { return result }
 
         let voteDTOs: [VoteDTO]
         if let lastSync {
-            voteDTOs = try await parlamentService.fetchVotesModifiedSince(sessionID: session.id!, since: lastSync)
+            voteDTOs = try await parlamentService.fetchVotesModifiedSince(sessionID: sessionId, since: lastSync)
         } else {
-            voteDTOs = try await parlamentService.fetchVotes(sessionID: session.id!)
+            voteDTOs = try await parlamentService.fetchVotes(sessionID: sessionId)
         }
 
-        // Build Geschaeft lookup
-        let allGeschaefte = try await Geschaeft.query(on: db).all()
-        var geschaeftLookup = Dictionary(uniqueKeysWithValues: allGeschaefte.compactMap { g -> (Int, Geschaeft)? in
+        logger.info("Fetched \(voteDTOs.count) vote DTOs for session \(session.sessionName)")
+
+        // Build Geschaeft lookup – only for this session's Geschaefte
+        try await session.$geschaefte.load(on: db)
+        var geschaeftLookup = Dictionary(uniqueKeysWithValues: session.geschaefte.compactMap { g -> (Int, Geschaeft)? in
             guard let id = g.id else { return nil }
             return (id, g)
         })
 
-        // Fetch missing Geschaefte
+        // Fetch missing Geschaefte referenced by votes
         let referencedBusinessNumbers = Set(voteDTOs.compactMap(\.BusinessNumber))
         let missingBusinessNumbers = referencedBusinessNumbers.subtracting(geschaeftLookup.keys)
 
         for businessID in missingBusinessNumbers {
             do {
-                if let dto = try await parlamentService.fetchBusiness(id: businessID) {
+                // Check if Geschaeft already exists in DB (from another session)
+                if let existingInDB = try await Geschaeft.find(businessID, on: db) {
+                    geschaeftLookup[businessID] = existingInDB
+                } else if let dto = try await parlamentService.fetchBusiness(id: businessID) {
                     let geschaeft = Geschaeft(
                         id: dto.ID,
                         businessShortNumber: dto.BusinessShortNumber ?? "",
@@ -340,13 +427,17 @@ final class SessionSyncService: Sendable {
                     geschaeftLookup[dto.ID] = geschaeft
                 }
             } catch {
-                // Skip
+                logger.warning("Failed to fetch Geschäft \(businessID): \(error)")
             }
         }
 
-        // Check existing Abstimmungen
-        let existingAbstimmungen = try await Abstimmung.query(on: db).all()
-        let existingIDs = Set(existingAbstimmungen.compactMap(\.id))
+        // Only load existing Abstimmungen for THIS session (not entire DB)
+        let sessionAbstimmungen = try await Abstimmung.query(on: db)
+            .filter(\.$idSession == sessionId)
+            .all()
+        let existingIDs = Set(sessionAbstimmungen.compactMap(\.id))
+
+        logger.info("Existing Abstimmungen for session: \(existingIDs.count)")
 
         // Insert new Abstimmungen
         var newAbstimmungen: [Abstimmung] = []
@@ -371,26 +462,33 @@ final class SessionSyncService: Sendable {
             result.abstimmungenCreated += 1
         }
 
-        // Fetch Voting records for new and incomplete Abstimmungen
-        let incompleteAbstimmungen = existingAbstimmungen.filter { abstimmung in
-            // Check if has stimmabgaben - we'll load them
-            true // We'll filter after loading
+        // Only fetch voting records for Abstimmungen that don't have Stimmabgaben yet
+        // Check only this session's existing Abstimmungen (not the entire DB)
+        var abstimmungenNeedingVotings: [Abstimmung] = newAbstimmungen
+        for abstimmung in sessionAbstimmungen {
+            let count = try await Stimmabgabe.query(on: db)
+                .filter(\.$abstimmung.$id == abstimmung.id)
+                .count()
+            if count == 0 {
+                abstimmungenNeedingVotings.append(abstimmung)
+            }
         }
 
-        for abstimmung in incompleteAbstimmungen {
-            try await abstimmung.$stimmabgaben.load(on: db)
-        }
-
-        let abstimmungenNeedingVotings = incompleteAbstimmungen.filter { $0.stimmabgaben.isEmpty } + newAbstimmungen
-        let existingStimmabgaben = try await Stimmabgabe.query(on: db).all()
-        let existingStimmabgabeIDs = Set(existingStimmabgaben.compactMap(\.id))
+        logger.info("Abstimmungen needing voting records: \(abstimmungenNeedingVotings.count)")
 
         for (index, abstimmung) in abstimmungenNeedingVotings.enumerated() {
             guard let abstimmungId = abstimmung.id else { continue }
             do {
+                // Check existing Stimmabgaben only for this Abstimmung
+                let existingStimmabgabeIDs = try await Stimmabgabe.query(on: db)
+                    .filter(\.$abstimmung.$id == abstimmungId)
+                    .all()
+                    .compactMap(\.id)
+                let existingSet = Set(existingStimmabgabeIDs)
+
                 let votingDTOs = try await parlamentService.fetchVotings(voteID: abstimmungId)
                 for vdto in votingDTOs {
-                    guard !existingStimmabgabeIDs.contains(vdto.ID) else { continue }
+                    guard !existingSet.contains(vdto.ID) else { continue }
                     let stimmabgabe = Stimmabgabe(
                         id: vdto.ID,
                         personNumber: vdto.PersonNumber ?? 0,
@@ -409,8 +507,8 @@ final class SessionSyncService: Sendable {
                 result.errors.append("Abstimmung \(abstimmungId): \(error.localizedDescription)")
             }
 
-            if index % 10 == 0 {
-                logger.info("Abstimmungen: \(index + 1)/\(abstimmungenNeedingVotings.count)")
+            if (index + 1) % 10 == 0 || index == abstimmungenNeedingVotings.count - 1 {
+                logger.info("Abstimmungen progress: \(index + 1)/\(abstimmungenNeedingVotings.count)")
             }
         }
 

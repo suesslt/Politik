@@ -1,53 +1,56 @@
 #extend("base"):
 #export("content"):
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>Benutzerverwaltung</h1>
-    <a href="/admin/users/new" class="btn btn-primary">Neuer Benutzer</a>
+<div class="flex items-center justify-between mb-5">
+    <h1 class="text-title-lg">Benutzerverwaltung</h1>
+    <a href="/admin/users/new" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-apple-blue text-white font-semibold text-body hover:bg-apple-blue/90 transition-colors shadow-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+        Neuer Benutzer
+    </a>
 </div>
 
 #if(flash):
-<div class="alert alert-success alert-dismissible fade show">
+<div class="flex items-center gap-2 px-4 py-3 rounded-xl bg-apple-green/10 text-apple-green text-body mb-5">
+    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
     #(flash)
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 </div>
 #endif
 
-<div class="table-responsive">
-    <table class="table table-hover">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>E-Mail</th>
-                <th>Rolle</th>
-                <th>Erstellt</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            #for(user in users):
-            <tr>
-                <td>#(user.name)</td>
-                <td>#(user.email)</td>
-                <td>
+<div class="card-apple">
+    <div class="divide-y divide-[var(--separator)]">
+        #for(user in users):
+        <div class="flex items-center gap-4 px-4 py-3.5 hover:bg-[var(--fill-tertiary)] transition-colors group">
+            <!-- Avatar -->
+            <div class="w-10 h-10 rounded-full bg-apple-blue/15 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 text-apple-blue" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
+            </div>
+            <!-- Info -->
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                    <span class="text-body font-semibold">#(user.name)</span>
                     #if(user.role == "admin"):
-                    <span class="badge bg-danger">Admin</span>
+                    <span class="inline-flex px-2 py-0.5 rounded-full text-caption2 font-semibold bg-apple-red/10 text-apple-red">Admin</span>
                     #else:
-                    <span class="badge bg-secondary">Benutzer</span>
+                    <span class="inline-flex px-2 py-0.5 rounded-full text-caption2 font-semibold bg-[var(--fill-secondary)] text-[var(--text-secondary)]">Benutzer</span>
                     #endif
-                </td>
-                <td>#date(user.createdAt, "dd.MM.yyyy")</td>
-                <td>
-                    <a href="/admin/users/#(user.id)/edit" class="btn btn-sm btn-outline-primary">Bearbeiten</a>
-                    #if(user.id != currentUser.id):
-                    <form method="POST" action="/admin/users/#(user.id)/delete" class="d-inline" onsubmit="return confirm('Benutzer wirklich löschen?')">
-                        <button type="submit" class="btn btn-sm btn-outline-danger">Löschen</button>
-                    </form>
-                    #endif
-                </td>
-            </tr>
-            #endfor
-        </tbody>
-    </table>
+                </div>
+                <p class="text-caption text-[var(--text-secondary)] truncate">#(user.email)</p>
+            </div>
+            <!-- Actions -->
+            <div class="flex items-center gap-1.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                <a href="/admin/users/#(user.id)/edit" class="p-2 rounded-lg text-apple-blue hover:bg-apple-blue/10 transition-colors" title="Bearbeiten">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/></svg>
+                </a>
+                #if(user.id != currentUser.id):
+                <form method="POST" action="/admin/users/#(user.id)/delete" onsubmit="return confirm('Benutzer wirklich löschen?')">
+                    <button type="submit" class="p-2 rounded-lg text-apple-red hover:bg-apple-red/10 transition-colors" title="Löschen">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
+                    </button>
+                </form>
+                #endif
+            </div>
+        </div>
+        #endfor
+    </div>
 </div>
 #endexport
 #endextend

@@ -2,6 +2,7 @@ import Vapor
 import Fluent
 import FluentPostgresDriver
 import Leaf
+import LeafKit
 
 func configure(_ app: Application) async throws {
     // MARK: - Database
@@ -21,6 +22,7 @@ func configure(_ app: Application) async throws {
 
     // MARK: - Leaf
     app.views.use(.leaf)
+    app.leaf.tags["raw"] = RawTag()
 
     // MARK: - Middleware
     app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))

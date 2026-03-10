@@ -1,58 +1,69 @@
 #extend("base"):
 #export("content"):
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>Sessions</h1>
+<div class="flex items-center justify-between mb-5">
+    <h1 class="text-title-lg">Sessions</h1>
     <form method="POST" action="/sync/load-sessions">
-        <button type="submit" class="btn btn-primary">Sessions laden</button>
+        <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-apple-blue text-white font-semibold text-body hover:bg-apple-blue/90 transition-colors shadow-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+            Sessions laden
+        </button>
     </form>
 </div>
 
 #if(count(sessions) == 0):
-<div class="alert alert-info">
-    Keine Sessions vorhanden. Klicke &laquo;Sessions laden&raquo; um Sessions von parlament.ch zu importieren.
+<div class="card-apple">
+    <div class="flex flex-col items-center gap-3 px-5 py-12">
+        <div class="w-12 h-12 rounded-2xl bg-apple-blue/10 flex items-center justify-center">
+            <svg class="w-6 h-6 text-apple-blue" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
+        </div>
+        <span class="text-body text-[var(--text-secondary)]">Keine Sessions vorhanden. Klicke &laquo;Sessions laden&raquo; um Daten zu importieren.</span>
+    </div>
 </div>
 #else:
-<div class="table-responsive">
-    <table class="table table-hover">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Abk.</th>
-                <th>Beginn</th>
-                <th>Ende</th>
-                <th>Typ</th>
-                <th>LP</th>
-                <th>Synced</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            #for(session in sessions):
-            <tr>
-                <td>
-                    <a href="/sessions/#(session.id)">#(session.sessionName)</a>
-                </td>
-                <td>#(session.abbreviation)</td>
-                <td>#date(session.startDate, "dd.MM.yyyy")</td>
-                <td>#date(session.endDate, "dd.MM.yyyy")</td>
-                <td>#(session.typeName)</td>
-                <td>#(session.legislativePeriodNumber)</td>
-                <td>
-                    #if(session.isSynced):
-                    <span class="badge bg-success">Ja</span>
-                    #else:
-                    <span class="badge bg-secondary">Nein</span>
-                    #endif
-                </td>
-                <td>
-                    <form method="POST" action="/sessions/#(session.id)/sync" class="d-inline">
-                        <button type="submit" class="btn btn-sm btn-outline-primary">Sync</button>
-                    </form>
-                </td>
-            </tr>
-            #endfor
-        </tbody>
-    </table>
+<div class="card-apple">
+    <div class="divide-y divide-[var(--separator)]">
+        #for(session in sessions):
+        <div class="flex items-center gap-4 px-4 py-3.5 hover:bg-[var(--fill-tertiary)] transition-colors group">
+            <!-- Icon -->
+            <div class="w-10 h-10 rounded-xl bg-apple-blue/10 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 text-apple-blue" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
+            </div>
+            <!-- Info -->
+            <a href="/sessions/#(session.id)" class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                    <span class="text-body font-semibold text-[var(--text-primary)] group-hover:text-apple-blue transition-colors">#(session.sessionName)</span>
+                    <span class="inline-flex px-1.5 py-0.5 rounded text-caption2 font-medium bg-[var(--fill-secondary)] text-[var(--text-secondary)]">#(session.abbreviation)</span>
+                </div>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                    <span class="text-caption font-mono text-[var(--text-secondary)]">#date(session.startDate, "dd.MM.yyyy") &ndash; #date(session.endDate, "dd.MM.yyyy")</span>
+                    <span class="text-caption text-[var(--text-tertiary)]">&middot;</span>
+                    <span class="text-caption text-[var(--text-secondary)]">#(session.typeName)</span>
+                    <span class="text-caption text-[var(--text-tertiary)]">&middot;</span>
+                    <span class="text-caption text-[var(--text-secondary)]">LP #(session.legislativePeriodNumber)</span>
+                </div>
+            </a>
+            <!-- Status & Action -->
+            <div class="flex items-center gap-3 shrink-0">
+                #if(session.isSynced):
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-caption2 font-semibold bg-apple-green/10 text-apple-green">
+                    <span class="w-1.5 h-1.5 rounded-full bg-apple-green"></span>
+                    Synced
+                </span>
+                #else:
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-caption2 font-semibold bg-[var(--fill-secondary)] text-[var(--text-secondary)]">
+                    <span class="w-1.5 h-1.5 rounded-full bg-[var(--text-tertiary)]"></span>
+                    Offen
+                </span>
+                #endif
+                <form method="POST" action="/sessions/#(session.id)/sync">
+                    <button type="submit" class="p-1.5 rounded-lg text-apple-blue hover:bg-apple-blue/10 transition-colors" title="Synchronisieren">
+                        <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182M2.985 19.644l3.181-3.182"/></svg>
+                    </button>
+                </form>
+            </div>
+        </div>
+        #endfor
+    </div>
 </div>
 #endif
 #endexport

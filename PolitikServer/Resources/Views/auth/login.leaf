@@ -13,7 +13,7 @@
                 <form method="POST" action="/login">
                     <div class="mb-3">
                         <label for="email" class="form-label">E-Mail</label>
-                        <input type="email" class="form-control" id="email" name="email" required autofocus>
+                        <input type="email" class="form-control" id="email" name="username" required autofocus>
                     </div>
                     <div class="mb-3">
                         <label for="password" class="form-label">Passwort</label>

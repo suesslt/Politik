@@ -1,20 +1,25 @@
 #extend("base"):
 #export("content"):
-<nav aria-label="breadcrumb">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/reports">Berichte</a></li>
-        <li class="breadcrumb-item active">#(report.sessionName) - #date(report.reportDate, "dd.MM.yyyy")</li>
-    </ol>
-</nav>
+<!-- Breadcrumb -->
+<div class="flex items-center gap-2 text-caption text-[var(--text-secondary)] mb-4">
+    <a href="/reports" class="hover:text-apple-blue transition-colors">Berichte</a>
+    <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+    <span class="text-[var(--text-primary)]">#(report.sessionName)</span>
+</div>
 
-<h1>Bericht: #(report.sessionName)</h1>
-<p class="text-muted">
-    Datum: #date(report.reportDate, "dd.MM.yyyy") |
-    Erstellt: #date(report.createdAt, "dd.MM.yyyy HH:mm")
-</p>
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-title-lg">Bericht: #(report.sessionName)</h1>
+        <div class="flex items-center gap-4 mt-1">
+            <span class="text-caption text-[var(--text-secondary)]">Datum: #date(report.reportDate, "dd.MM.yyyy")</span>
+            <span class="text-caption text-[var(--text-tertiary)]">&middot;</span>
+            <span class="text-caption text-[var(--text-secondary)]">Erstellt: #date(report.createdAt, "dd.MM.yyyy HH:mm")</span>
+        </div>
+    </div>
+</div>
 
-<div class="card">
-    <div class="card-body report-content">
+<div class="card-apple">
+    <div class="px-6 py-5 report-content">
         #(report.content)
     </div>
 </div>

@@ -26,6 +26,13 @@ func routes(_ app: Application) throws {
     protected.get("parlamentarier", ":personNumber", use: parlamentarierController.show)
     protected.post("parlamentarier", ":personNumber", "analyze", use: parlamentarierController.analyze)
 
+    let wortmeldungController = WortmeldungController()
+    protected.get("wortmeldungen", use: wortmeldungController.index)
+
+    let agendaController = AgendaController()
+    protected.get("agenda", use: agendaController.index)
+    protected.get("agenda", "day", use: agendaController.day)
+
     let reportController = DailyReportController()
     protected.get("reports", use: reportController.index)
     protected.get("reports", ":id", use: reportController.show)

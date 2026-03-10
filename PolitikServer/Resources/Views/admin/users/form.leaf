@@ -1,42 +1,50 @@
 #extend("base"):
 #export("content"):
-<h1>#(title)</h1>
+<div class="max-w-xl">
+    <h1 class="text-title-lg mb-6">#(title)</h1>
 
-#if(error):
-<div class="alert alert-danger">#(error)</div>
-#endif
+    #if(error):
+    <div class="flex items-center gap-2 px-4 py-3 rounded-lg bg-apple-red/10 text-apple-red text-body mb-4">
+        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
+        #(error)
+    </div>
+    #endif
 
-<div class="card">
-    <div class="card-body">
-        #if(isEdit):
-        <form method="POST" action="/admin/users/#(userId)">
-        #else:
-        <form method="POST" action="/admin/users">
-        #endif
-            <div class="mb-3">
-                <label for="name" class="form-label">Name</label>
-                <input type="text" class="form-control" id="name" name="name" value="#if(formUser):#(formUser.name)#endif" required>
-            </div>
-            <div class="mb-3">
-                <label for="email" class="form-label">E-Mail</label>
-                <input type="email" class="form-control" id="email" name="email" value="#if(formUser):#(formUser.email)#endif" required>
-            </div>
-            <div class="mb-3">
-                <label for="password" class="form-label">Passwort #if(isEdit):(leer lassen um nicht zu ändern)#endif</label>
-                <input type="password" class="form-control" id="password" name="password" #if(!isEdit):required#endif>
-            </div>
-            <div class="mb-3">
-                <label for="role" class="form-label">Rolle</label>
-                <select class="form-select" id="role" name="role">
-                    <option value="user" #if(formUser):#if(formUser.role == "user"):selected#endif#endif>Benutzer</option>
-                    <option value="admin" #if(formUser):#if(formUser.role == "admin"):selected#endif#endif>Administrator</option>
-                </select>
-            </div>
-            <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-primary">Speichern</button>
-                <a href="/admin/users" class="btn btn-secondary">Abbrechen</a>
-            </div>
-        </form>
+    <div class="card-apple">
+        <div class="p-6">
+            #if(isEdit):
+            <form method="POST" action="/admin/users/#(userId)" class="space-y-4">
+            #else:
+            <form method="POST" action="/admin/users" class="space-y-4">
+            #endif
+                <div>
+                    <label class="block text-caption font-medium text-[var(--text-secondary)] mb-1.5">Name</label>
+                    <input type="text" name="name" value="#if(formUser):#(formUser.name)#endif" required
+                        class="w-full px-3 py-2.5 rounded-lg bg-[var(--bg-tertiary)] border border-transparent text-body text-[var(--text-primary)] focus:outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/20 transition-all">
+                </div>
+                <div>
+                    <label class="block text-caption font-medium text-[var(--text-secondary)] mb-1.5">E-Mail</label>
+                    <input type="email" name="email" value="#if(formUser):#(formUser.email)#endif" required
+                        class="w-full px-3 py-2.5 rounded-lg bg-[var(--bg-tertiary)] border border-transparent text-body text-[var(--text-primary)] focus:outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/20 transition-all">
+                </div>
+                <div>
+                    <label class="block text-caption font-medium text-[var(--text-secondary)] mb-1.5">Passwort #if(isEdit):<span class="font-normal">(leer lassen um nicht zu ändern)</span>#endif</label>
+                    <input type="password" name="password" #if(!isEdit):required#endif
+                        class="w-full px-3 py-2.5 rounded-lg bg-[var(--bg-tertiary)] border border-transparent text-body text-[var(--text-primary)] focus:outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/20 transition-all">
+                </div>
+                <div>
+                    <label class="block text-caption font-medium text-[var(--text-secondary)] mb-1.5">Rolle</label>
+                    <select name="role" class="w-full px-3 py-2.5 rounded-lg bg-[var(--bg-tertiary)] border border-transparent text-body text-[var(--text-primary)] focus:outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/20 transition-all">
+                        <option value="user" #if(formUser):#if(formUser.role == "user"):selected#endif#endif>Benutzer</option>
+                        <option value="admin" #if(formUser):#if(formUser.role == "admin"):selected#endif#endif>Administrator</option>
+                    </select>
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="submit" class="px-5 py-2.5 rounded-lg bg-apple-blue text-white font-semibold text-body hover:bg-apple-blue/90 transition-colors shadow-sm">Speichern</button>
+                    <a href="/admin/users" class="px-5 py-2.5 rounded-lg text-body font-medium text-[var(--text-secondary)] hover:bg-[var(--fill-tertiary)] transition-colors">Abbrechen</a>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 #endexport

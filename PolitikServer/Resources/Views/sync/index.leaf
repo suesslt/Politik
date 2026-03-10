@@ -1,90 +1,162 @@
 #extend("base"):
 #export("content"):
-<h1>Synchronisation</h1>
+<div class="flex items-center justify-between mb-5">
+    <h1 class="text-title-lg">Synchronisation</h1>
+</div>
 
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card text-center">
-            <div class="card-body">
-                <h3>#(geschaefteCount)</h3>
-                <p class="text-muted">Geschaefte</p>
+<!-- Flash Message -->
+#if(flash):
+<div class="card-apple mb-5" x-data="{ show: true }" x-show="show" x-transition>
+    <div class="flex items-center gap-3 px-4 py-3
+        #if(flashType == "error"):bg-apple-red/10
+        #elseif(flashType == "warning"):bg-apple-orange/10
+        #else:bg-apple-green/10
+        #endif">
+        #if(flashType == "error"):
+        <svg class="w-5 h-5 text-apple-red shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
+        <span class="text-body text-apple-red flex-1">#(flash)</span>
+        #elseif(flashType == "warning"):
+        <svg class="w-5 h-5 text-apple-orange shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
+        <span class="text-body text-apple-orange flex-1">#(flash)</span>
+        #else:
+        <svg class="w-5 h-5 text-apple-green shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span class="text-body text-apple-green flex-1">#(flash)</span>
+        #endif
+        <button @click="show = false" class="p-1 rounded hover:bg-black/5 transition-colors shrink-0">
+            <svg class="w-4 h-4 text-[var(--text-tertiary)]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+    </div>
+</div>
+#endif
+
+<!-- Stats Grid -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+    <div class="card-apple">
+        <div class="flex items-center gap-3 px-4 py-3.5">
+            <div class="w-9 h-9 rounded-xl bg-apple-blue/10 flex items-center justify-center shrink-0">
+                <svg class="w-4.5 h-4.5 text-apple-blue" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m5.232 13.81c1.065.273 2.21.137 3.172-.429 1.87-1.1 2.494-3.494 1.394-5.364-1.1-1.87-3.494-2.494-5.364-1.394-.273.162-.517.362-.726.59"/></svg>
+            </div>
+            <div>
+                <div class="text-title font-bold text-apple-blue">#(geschaefteCount)</div>
+                <div class="text-caption2 text-[var(--text-secondary)]">Geschäfte</div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card text-center">
-            <div class="card-body">
-                <h3>#(parlamentarierCount)</h3>
-                <p class="text-muted">Parlamentarier</p>
+    <div class="card-apple">
+        <div class="flex items-center gap-3 px-4 py-3.5">
+            <div class="w-9 h-9 rounded-xl bg-apple-purple/10 flex items-center justify-center shrink-0">
+                <svg class="w-4.5 h-4.5 text-apple-purple" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
+            </div>
+            <div>
+                <div class="text-title font-bold text-apple-purple">#(parlamentarierCount)</div>
+                <div class="text-caption2 text-[var(--text-secondary)]">Parlamentarier</div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card text-center">
-            <div class="card-body">
-                <h3>#(wortmeldungenCount)</h3>
-                <p class="text-muted">Wortmeldungen</p>
+    <div class="card-apple">
+        <div class="flex items-center gap-3 px-4 py-3.5">
+            <div class="w-9 h-9 rounded-xl bg-apple-orange/10 flex items-center justify-center shrink-0">
+                <svg class="w-4.5 h-4.5 text-apple-orange" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z"/></svg>
+            </div>
+            <div>
+                <div class="text-title font-bold text-apple-orange">#(wortmeldungenCount)</div>
+                <div class="text-caption2 text-[var(--text-secondary)]">Wortmeldungen</div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card text-center">
-            <div class="card-body">
-                <h3>#(abstimmungenCount)</h3>
-                <p class="text-muted">Abstimmungen</p>
+    <div class="card-apple">
+        <div class="flex items-center gap-3 px-4 py-3.5">
+            <div class="w-9 h-9 rounded-xl bg-apple-green/10 flex items-center justify-center shrink-0">
+                <svg class="w-4.5 h-4.5 text-apple-green" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div>
+                <div class="text-title font-bold text-apple-green">#(abstimmungenCount)</div>
+                <div class="text-caption2 text-[var(--text-secondary)]">Abstimmungen</div>
             </div>
         </div>
     </div>
 </div>
 
-<h2>Sessions synchronisieren</h2>
+<!-- Sessions sync -->
+<div class="flex items-center justify-between mb-4">
+    <h2 class="text-title">Sessions synchronisieren</h2>
+</div>
 
 #if(count(sessions) == 0):
-<div class="alert alert-info">
-    Keine Sessions vorhanden. Lade zuerst Sessions von parlament.ch.
-    <form method="POST" action="/sync/load-sessions" class="mt-2">
-        <button type="submit" class="btn btn-primary">Sessions laden</button>
-    </form>
+<div class="card-apple">
+    <div class="flex flex-col items-center gap-3 px-5 py-12">
+        <div class="w-12 h-12 rounded-2xl bg-apple-blue/10 flex items-center justify-center">
+            <svg class="w-6 h-6 text-apple-blue" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/></svg>
+        </div>
+        <span class="text-body text-[var(--text-secondary)]">Keine Sessions vorhanden. Lade zuerst Sessions von parlament.ch.</span>
+        <form method="POST" action="/sync/load-sessions" class="mt-2">
+            <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-apple-blue text-white font-semibold text-body hover:bg-apple-blue/90 transition-colors shadow-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                Sessions laden
+            </button>
+        </form>
+    </div>
 </div>
 #else:
-<form method="POST" action="/sync/sessions">
-    <div class="table-responsive">
-        <table class="table table-hover">
-            <thead>
-                <tr>
-                    <th><input type="checkbox" id="selectAll"></th>
-                    <th>Name</th>
-                    <th>Zeitraum</th>
-                    <th>Status</th>
-                    <th>Letzter Sync</th>
-                </tr>
-            </thead>
-            <tbody>
-                #for(session in sessions):
-                <tr>
-                    <td><input type="checkbox" name="sessionIds[]" value="#(session.id)"></td>
-                    <td>#(session.sessionName)</td>
-                    <td>#date(session.startDate, "dd.MM.yyyy") &ndash; #date(session.endDate, "dd.MM.yyyy")</td>
-                    <td>
-                        #if(session.isSynced):
-                        <span class="badge bg-success">Synced</span>
-                        #else:
-                        <span class="badge bg-warning">Ausstehend</span>
-                        #endif
-                    </td>
-                    <td>
-                        #if(session.lastSyncDate):
-                        #date(session.lastSyncDate, "dd.MM.yyyy HH:mm")
-                        #else:
-                        &ndash;
-                        #endif
-                    </td>
-                </tr>
-                #endfor
-            </tbody>
-        </table>
+<form method="POST" action="/sync/sessions" x-data="{ syncing: false }" @submit="syncing = true">
+    <div class="card-apple">
+        <div class="divide-y divide-[var(--separator)]">
+            <!-- Header -->
+            <div class="grid grid-cols-12 gap-4 px-4 py-2.5 text-caption2 font-semibold uppercase tracking-wider text-[var(--text-tertiary)] bg-[var(--bg-secondary)]">
+                <div class="col-span-1 flex items-center justify-center">
+                    <input type="checkbox" id="selectAll" class="w-4 h-4 rounded border-[var(--separator)] text-apple-blue focus:ring-apple-blue/20">
+                </div>
+                <div class="col-span-4">Name</div>
+                <div class="col-span-3">Zeitraum</div>
+                <div class="col-span-2">Status</div>
+                <div class="col-span-2">Letzter Sync</div>
+            </div>
+
+            #for(session in sessions):
+            <div class="grid grid-cols-12 gap-4 px-4 py-3 items-center hover:bg-[var(--fill-tertiary)] transition-colors">
+                <div class="col-span-1 flex items-center justify-center">
+                    <input type="checkbox" name="sessionIds" value="#(session.id)" class="session-checkbox w-4 h-4 rounded border-[var(--separator)] text-apple-blue focus:ring-apple-blue/20">
+                </div>
+                <div class="col-span-4 text-body font-medium">#(session.sessionName)</div>
+                <div class="col-span-3 text-caption font-mono text-[var(--text-secondary)]">#date(session.startDate, "dd.MM.yyyy") &ndash; #date(session.endDate, "dd.MM.yyyy")</div>
+                <div class="col-span-2">
+                    #if(session.isSynced):
+                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-caption2 font-semibold bg-apple-green/10 text-apple-green">
+                        <span class="w-1.5 h-1.5 rounded-full bg-apple-green"></span>
+                        Synced
+                    </span>
+                    #else:
+                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-caption2 font-semibold bg-apple-orange/10 text-apple-orange">
+                        <span class="w-1.5 h-1.5 rounded-full bg-apple-orange"></span>
+                        Ausstehend
+                    </span>
+                    #endif
+                </div>
+                <div class="col-span-2 text-caption text-[var(--text-secondary)]">
+                    #if(session.lastSyncDate):
+                    <span class="font-mono">#date(session.lastSyncDate, "dd.MM.yyyy HH:mm")</span>
+                    #else:
+                    &ndash;
+                    #endif
+                </div>
+            </div>
+            #endfor
+        </div>
     </div>
-    <button type="submit" class="btn btn-primary">Ausgewaehlte synchronisieren</button>
+
+    <div class="mt-4 flex items-center gap-3">
+        <button type="submit" :disabled="syncing"
+            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-apple-blue text-white font-semibold text-body hover:bg-apple-blue/90 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+            <template x-if="!syncing">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182M2.985 19.644l3.181-3.182"/></svg>
+            </template>
+            <template x-if="syncing">
+                <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+            </template>
+            <span x-text="syncing ? 'Synchronisiere...' : 'Ausgewählte synchronisieren'"></span>
+        </button>
+        <span x-show="syncing" x-cloak class="text-caption text-[var(--text-secondary)]">Dies kann einige Minuten dauern...</span>
+    </div>
 </form>
 #endif
 #endexport

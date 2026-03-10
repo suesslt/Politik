@@ -1,48 +1,442 @@
-/* Politik Server - Custom Styles */
+/* Politik Server – SwiftUI-inspired Design System */
+
+:root {
+    /* Apple System Colors – Light */
+    --apple-blue: #007AFF;
+    --apple-green: #34C759;
+    --apple-orange: #FF9500;
+    --apple-red: #FF3B30;
+    --apple-purple: #AF52DE;
+    --apple-gray: #8E8E93;
+
+    /* Backgrounds */
+    --bg-primary: #FFFFFF;
+    --bg-secondary: #F2F2F7;
+    --bg-tertiary: #E5E5EA;
+    --bg-grouped: #F2F2F7;
+
+    /* Text */
+    --text-primary: #000000;
+    --text-secondary: rgba(60, 60, 67, 0.6);
+    --text-tertiary: rgba(60, 60, 67, 0.3);
+
+    /* Separators */
+    --separator: rgba(60, 60, 67, 0.12);
+    --separator-opaque: #C6C6C8;
+
+    /* Fills */
+    --fill-primary: rgba(120, 120, 128, 0.2);
+    --fill-secondary: rgba(120, 120, 128, 0.16);
+    --fill-tertiary: rgba(120, 120, 128, 0.12);
+
+    /* Sidebar */
+    --sidebar-bg: rgba(242, 242, 247, 0.85);
+    --sidebar-width: 15rem;
+}
+
+/* Dark Mode */
+.dark {
+    --bg-primary: #000000;
+    --bg-secondary: #1C1C1E;
+    --bg-tertiary: #2C2C2E;
+    --bg-grouped: #1C1C1E;
+
+    --text-primary: #FFFFFF;
+    --text-secondary: rgba(235, 235, 245, 0.6);
+    --text-tertiary: rgba(235, 235, 245, 0.3);
+
+    --separator: rgba(84, 84, 88, 0.65);
+    --separator-opaque: #38383A;
+
+    --fill-primary: rgba(120, 120, 128, 0.36);
+    --fill-secondary: rgba(120, 120, 128, 0.32);
+    --fill-tertiary: rgba(120, 120, 128, 0.24);
+
+    --sidebar-bg: rgba(28, 28, 30, 0.85);
+}
+
+/* Base */
+* {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+                 system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: var(--bg-grouped);
+    color: var(--text-primary);
 }
 
-.navbar-brand {
-    font-weight: 700;
-    letter-spacing: 0.5px;
+/* Vibrancy / Glassmorphism */
+.vibrancy {
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
-/* Progress bars for analysis scores */
-.progress {
-    height: 8px;
-    border-radius: 4px;
+/* Sidebar nav items */
+.nav-item-active {
+    background-color: rgba(0, 122, 255, 0.12);
+    color: var(--apple-blue) !important;
 }
 
-/* Report content - rendered Markdown */
-.report-content h1 { font-size: 1.8rem; margin-top: 1.5rem; }
-.report-content h2 { font-size: 1.4rem; margin-top: 1.2rem; border-bottom: 1px solid #dee2e6; padding-bottom: 0.3rem; }
-.report-content h3 { font-size: 1.2rem; margin-top: 1rem; }
+/* Smooth transitions */
+.transition-sidebar {
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Card styles */
+.card-apple {
+    background: var(--bg-primary);
+    border: 1px solid var(--separator);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+}
+
+.card-apple-header {
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--separator);
+}
+
+/* ============================
+   Simple-DataTables Overrides
+   Apple Design Integration
+   ============================ */
+
+/* Wrapper – card-like container */
+.datatable-wrapper {
+    background: var(--bg-primary);
+    border: 1px solid var(--separator);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+    font-family: inherit;
+}
+
+/* Top bar: search + per-page selector */
+.datatable-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--separator);
+    background: var(--bg-secondary);
+    gap: 12px;
+}
+
+/* Search input */
+.datatable-search {
+    flex: 1;
+    max-width: 320px;
+}
+.datatable-search .datatable-input {
+    width: 100%;
+    padding: 7px 12px 7px 32px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 13px;
+    line-height: 18px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='%238E8E93'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 8px center;
+    background-size: 16px 16px;
+}
+.datatable-search .datatable-input::placeholder {
+    color: var(--text-tertiary);
+}
+.datatable-search .datatable-input:focus {
+    border-color: var(--apple-blue);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+}
+.datatable-search label {
+    display: none;
+}
+
+/* Per-page selector */
+.datatable-dropdown {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+.datatable-dropdown label {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+.datatable-dropdown .datatable-selector {
+    padding: 5px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--separator);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 12px;
+    outline: none;
+    cursor: pointer;
+}
+.datatable-dropdown .datatable-selector:focus {
+    border-color: var(--apple-blue);
+}
+
+/* Table */
+.datatable-wrapper .datatable-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+/* Table header */
+.datatable-wrapper .datatable-table thead {
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--separator);
+}
+.datatable-wrapper .datatable-table thead th {
+    padding: 8px 16px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    border-bottom: 1px solid var(--separator);
+    transition: color 0.15s;
+}
+.datatable-wrapper .datatable-table thead th:hover {
+    color: var(--apple-blue);
+}
+
+/* Sort indicators */
+.datatable-wrapper .datatable-table thead th .datatable-sorter {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0;
+    color: inherit;
+    width: 100%;
+}
+.datatable-wrapper .datatable-table thead th .datatable-sorter::before,
+.datatable-wrapper .datatable-table thead th .datatable-sorter::after {
+    border-color: var(--text-tertiary) transparent;
+}
+.datatable-wrapper .datatable-table thead th.datatable-ascending .datatable-sorter::after,
+.datatable-wrapper .datatable-table thead th.datatable-descending .datatable-sorter::before {
+    border-color: var(--apple-blue) transparent;
+}
+
+/* Table body */
+.datatable-wrapper .datatable-table tbody tr {
+    border-bottom: 1px solid var(--separator);
+    transition: background-color 0.1s;
+}
+.datatable-wrapper .datatable-table tbody tr:last-child {
+    border-bottom: none;
+}
+.datatable-wrapper .datatable-table tbody tr:hover {
+    background-color: var(--fill-tertiary);
+}
+
+/* Zebra striping – subtle */
+.datatable-wrapper .datatable-table tbody tr:nth-child(even) {
+    background-color: rgba(120, 120, 128, 0.03);
+}
+.datatable-wrapper .datatable-table tbody tr:nth-child(even):hover {
+    background-color: var(--fill-tertiary);
+}
+
+/* Table cells */
+.datatable-wrapper .datatable-table tbody td {
+    padding: 10px 16px;
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--text-primary);
+    vertical-align: middle;
+}
+
+/* Clickable rows */
+.datatable-wrapper .datatable-table tbody tr.cursor-pointer {
+    cursor: pointer;
+}
+
+/* Bottom bar: info + pagination */
+.datatable-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-top: 1px solid var(--separator);
+    background: var(--bg-secondary);
+    gap: 12px;
+}
+
+/* Info text */
+.datatable-info {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+/* Pagination */
+.datatable-pagination .datatable-pagination-list {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.datatable-pagination .datatable-pagination-list li {
+    margin: 0;
+}
+.datatable-pagination .datatable-pagination-list-item a,
+.datatable-pagination .datatable-pagination-list-item button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 6px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: background-color 0.1s, color 0.1s;
+    cursor: pointer;
+    border: none;
+    background: none;
+}
+.datatable-pagination .datatable-pagination-list-item a:hover,
+.datatable-pagination .datatable-pagination-list-item button:hover {
+    background-color: var(--fill-tertiary);
+}
+.datatable-pagination .datatable-pagination-list-item.datatable-active a,
+.datatable-pagination .datatable-pagination-list-item.datatable-active button,
+.datatable-pagination .datatable-pagination-list-item.active a {
+    background-color: var(--apple-blue);
+    color: #FFFFFF;
+    font-weight: 600;
+}
+.datatable-pagination .datatable-pagination-list-item.datatable-disabled a,
+.datatable-pagination .datatable-pagination-list-item.datatable-disabled button {
+    color: var(--text-tertiary);
+    cursor: default;
+    pointer-events: none;
+}
+
+/* Empty state */
+.datatable-wrapper .datatable-empty {
+    padding: 40px 16px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+/* Badge in table */
+.badge-faction {
+    display: inline-flex;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(175, 82, 222, 0.1);
+    color: #AF52DE;
+}
+.badge-analysis {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+}
+.badge-analysis-yes {
+    background: rgba(52, 199, 89, 0.1);
+    color: #34C759;
+}
+.badge-analysis-no {
+    background: rgba(142, 142, 147, 0.1);
+    color: #8E8E93;
+}
+
+/* Dark mode adjustments */
+.dark .datatable-wrapper .datatable-table tbody tr:nth-child(even) {
+    background-color: rgba(120, 120, 128, 0.06);
+}
+.dark .datatable-search .datatable-input {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='%23636366'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z'/%3E%3C/svg%3E");
+}
+
+/* Report content – rendered Markdown */
+.report-content h1 { font-size: 1.6rem; font-weight: 700; margin-top: 1.5rem; }
+.report-content h2 { font-size: 1.3rem; font-weight: 600; margin-top: 1.2rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--separator); }
+.report-content h3 { font-size: 1.1rem; font-weight: 600; margin-top: 1rem; }
 .report-content ul { padding-left: 1.5rem; }
 .report-content li { margin-bottom: 0.3rem; }
+.report-content p { margin-bottom: 0.8rem; line-height: 1.6; }
 
-/* Table improvements */
-.table th {
-    font-weight: 600;
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    color: #6c757d;
+/* HTMX loading indicator */
+.htmx-indicator {
+    display: none;
+}
+.htmx-request .htmx-indicator {
+    display: inline-flex;
+}
+.htmx-request.htmx-indicator {
+    display: inline-flex;
 }
 
-/* Accordion improvements for Wortmeldungen */
-.accordion-button:not(.collapsed) {
-    background-color: #f8f9fa;
-    color: #212529;
+/* Loading bar */
+#loading-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 2px;
+    background: var(--apple-blue);
+    z-index: 9999;
+    transition: width 0.3s ease;
+    width: 0;
+}
+#loading-bar.active {
+    animation: loading-progress 1.5s ease-in-out infinite;
+}
+@keyframes loading-progress {
+    0% { width: 0; }
+    50% { width: 70%; }
+    100% { width: 95%; }
 }
 
-/* Cards */
-.card {
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-    border: 1px solid #e9ecef;
+/* Alpine.js cloak */
+[x-cloak] {
+    display: none !important;
 }
 
-.card-header {
-    background-color: #f8f9fa;
-    font-weight: 600;
+/* Scrollbar styling (WebKit) */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--fill-primary);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--fill-secondary);
 }
